@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """Validate .agents/walkthroughs/ (and .agents/wikis/) against the rules in
 INSTRUCTIONS/00-conventions.org, 01-index-guide.org, 02-expansion-guide.org,
-03-quiz-guide.org, 04-archive-guide.org, and 05-wiki-guide.org. Exits
-non-zero if any check fails.
+04-archive-guide.org, and 05-wiki-guide.org. Exits non-zero if any check
+fails.
 
 Usage: .agents/walkthroughs/SCRIPTS/validate-walkthroughs.py
 """
 
 import re
 import sys
-from datetime import date
 from pathlib import Path
 
 WT_DIR = Path(__file__).resolve().parent.parent
@@ -36,8 +35,6 @@ DANGLING_SESH_LINK_RE = re.compile(r"\[\[file:[^\]]*\d+-[^\]/]+-SESH\.\w+", re.I
 FILE_LINK_RE = re.compile(r"\[\[file:([^\]]+)\]")
 CHECKED_STEP_RE = re.compile(r"^-\s+\[[Xx]\]\s+\S")
 RESULT_RE = re.compile(r"^\s*\*Result:\*\s*\S")
-LAST_REVIEWED_RE = re.compile(r"^#\+LAST_REVIEWED:\s*(\S+)", re.M)
-STALE_REVIEW_DAYS = 30
 
 failures = []
 warnings = []
@@ -244,16 +241,6 @@ REQUIRED_SECTIONS_SINCE = {
     "For AI Assistants": 2,
 }
 RESULT_BLOCK_REQUIRED_SINCE = 3
-# Before this version, '* Quiz' was unconditionally required (old behavior,
-# preserved below for packages that haven't bumped past it). From this
-# version on, a Quiz must not exist until the Guide checklist is fully
-# checked, and becomes required once it is — see 03-quiz-guide.org's
-# CRITICAL RULE on quiz-authoring timing.
-QUIZ_TIMING_REQUIRED_SINCE = 9
-
-
-def count_numbered(lines, start, stop):
-    return sum(1 for i in range(start, stop) if re.match(r"^\d+\.\s+\S", lines[i]))
 
 
 def validate_walkthrough(wt_id, path, current_version):
@@ -345,88 +332,6 @@ def validate_walkthrough(wt_id, path, current_version):
                         f"(required since guide v{RESULT_BLOCK_REQUIRED_SINCE}; "
                         f"this package declares v{pkg_version})"
                     )
-
-    fully_checked = False
-    if guide_idx is not None:
-        cookie = re.search(r"\[(\d+)/(\d+)\]", top_headings[guide_idx][1])
-        if cookie and cookie.group(1) == cookie.group(2):
-            fully_checked = True
-
-    lr_m = LAST_REVIEWED_RE.search(text)
-    if not lr_m:
-        warn(f"{rel}: no #+LAST_REVIEWED: line — spaced-repetition staleness can't be tracked")
-    else:
-        try:
-            last_reviewed = date.fromisoformat(lr_m.group(1))
-        except ValueError:
-            warn(f"{rel}: #+LAST_REVIEWED: '{lr_m.group(1)}' is not a valid ISO date (YYYY-MM-DD)")
-        else:
-            age_days = (date.today() - last_reviewed).days
-            if fully_checked and age_days > STALE_REVIEW_DAYS:
-                warn(
-                    f"{rel}: all steps checked but last reviewed {age_days} "
-                    f"days ago — consider a refresher session, then update "
-                    f"#+LAST_REVIEWED:"
-                )
-
-    quiz_start = next(
-        (i for i, l in enumerate(lines) if re.match(r"^\*\s+Quiz\s*$", l)), None
-    )
-    quiz_present = quiz_start is not None
-
-    quiz_timing_gated = (
-        pkg_version_int is not None and pkg_version_int >= QUIZ_TIMING_REQUIRED_SINCE
-    )
-    if quiz_timing_gated:
-        if quiz_present and not fully_checked:
-            fail(
-                f"{rel}: '* Quiz' section is present but the Guide checklist "
-                f"isn't fully checked yet — a Quiz must not be authored "
-                f"until every step has a real '*Result:*' block, so a "
-                f"decision doesn't get pre-baked into the questions before "
-                f"it's actually reached (required since guide "
-                f"v{QUIZ_TIMING_REQUIRED_SINCE}; this package declares "
-                f"v{pkg_version}; see 03-quiz-guide.org)"
-            )
-        if fully_checked and not quiz_present:
-            fail(
-                f"{rel}: Guide checklist is fully checked but there is no "
-                f"'* Quiz' section (required once complete, since guide "
-                f"v{QUIZ_TIMING_REQUIRED_SINCE}; this package declares "
-                f"v{pkg_version})"
-            )
-    elif not quiz_present:
-        fail(f"{rel}: missing '* Quiz' section")
-
-    if quiz_present:
-        quiz_end = next(
-            (
-                i
-                for i in range(quiz_start + 1, len(lines))
-                if re.match(r"^\*\s+\S", lines[i])
-            ),
-            len(lines),
-        )
-        ak_start = next(
-            (
-                i
-                for i in range(quiz_start + 1, quiz_end)
-                if re.match(r"^\*\*\s+Answer Key\s*$", lines[i])
-            ),
-            None,
-        )
-        if ak_start is None:
-            fail(f"{rel}: Quiz section has no '** Answer Key' subsection")
-            qcount = count_numbered(lines, quiz_start + 1, quiz_end)
-            acount = None
-        else:
-            qcount = count_numbered(lines, quiz_start + 1, ak_start)
-            acount = count_numbered(lines, ak_start + 1, quiz_end)
-
-        if qcount != 5:
-            fail(f"{rel}: Quiz has {qcount} question(s), must be exactly 5")
-        if acount is not None and acount != 5:
-            fail(f"{rel}: Answer Key has {acount} entr(y/ies), must be exactly 5")
 
 
 def validate_supporting_files(dir_path, wt_text):

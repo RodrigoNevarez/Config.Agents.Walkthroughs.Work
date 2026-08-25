@@ -1,21 +1,15 @@
 #+TITLE: Walkthrough Shared Conventions
-#+WALKTHROUGH_GUIDE_VERSION: 12
+#+WALKTHROUGH_GUIDE_VERSION: 13
 
 Single source of truth for conventions shared by
 [[file:01-index-guide.org][01-index-guide.org]] (the index),
 [[file:02-expansion-guide.org][02-expansion-guide.org]] (walkthrough
-packages), [[file:03-quiz-guide.org][03-quiz-guide.org]] (writing and
-running a walkthrough's Quiz), [[file:04-archive-guide.org][04-archive-guide.org]]
-(archiving a settled package), [[file:05-wiki-guide.org][05-wiki-guide.org]]
-(the project wiki at =.agents/wikis/=), and
-[[file:06-flashcards-guide.org][06-flashcards-guide.org]] (the
-spaced-repetition study feature at =.agents/flashcards/=, mined from
-=archive/=). All six reference this file instead of
+packages), [[file:04-archive-guide.org][04-archive-guide.org]]
+(archiving a settled package), and [[file:05-wiki-guide.org][05-wiki-guide.org]]
+(the project wiki at =.agents/wikis/=). All four reference this file instead of
 restating it — a rule here changes in exactly one place, not several that can
 drift apart. Checked mechanically by =SCRIPTS/validate-walkthroughs.py=
-(walkthroughs, index, and wiki) and
-=.agents/flashcards/SCRIPTS/validate-flashcards.py= (flashcards) — run
-separately, not merged into one script.
+(walkthroughs, index, and wiki).
 
 * UUID Convention
 
@@ -38,16 +32,11 @@ step — gets a permanent =:ID:= via a =:PROPERTIES:= drawer:
   own text. Headings and step descriptions stay clean and
   human-readable.
 - *CRITICAL RULE — one namespace.* Every UUID under
-  =.agents/walkthroughs/=, =.agents/wikis/=, *or* =.agents/flashcards/= —
-  index nodes, package directory names, individual walkthrough steps, wiki
-  pages (see [[file:05-wiki-guide.org][05-wiki-guide.org]]'s UUID
-  Placement), and flashcard decks and cards (see
-  [[file:06-flashcards-guide.org][06-flashcards-guide.org]]'s UUID
-  Placement) — must be globally unique across all three trees, not just
-  within one file. Run =SCRIPTS/validate-walkthroughs.py= and
-  =.agents/flashcards/SCRIPTS/validate-flashcards.py= together to check;
-  neither will catch a collision by reading alone, only by comparing across
-  both.
+  =.agents/walkthroughs/= *or* =.agents/wikis/= — index nodes, package
+  directory names, individual walkthrough steps, and wiki pages (see
+  [[file:05-wiki-guide.org][05-wiki-guide.org]]'s UUID Placement) — must be
+  globally unique across both trees, not just within one file. Run
+  =SCRIPTS/validate-walkthroughs.py= to check.
 
 * Issue-Tracker Mental Model
 
@@ -73,11 +62,7 @@ is a separate system with its own validator checks, enforced
 unconditionally rather than version-gated — a wiki page doesn't declare a
 =#+WALKTHROUGH_GUIDE_VERSION:= line and isn't subject to this section's
 staleness warning. Introducing =05-wiki-guide.org= itself did not bump this
-version, for that reason. The same is true of the flashcards feature (see
-[[file:06-flashcards-guide.org][06-flashcards-guide.org]]) — its own
-=validate-flashcards.py= enforces its rules unconditionally, a deck or card
-file carries no =#+WALKTHROUGH_GUIDE_VERSION:= line, and introducing that
-guide did not bump this version either.
+version, for that reason.
 
 Bump the number here whenever the required structure actually changes
 — a section added, removed, or renamed, or a new CRITICAL RULE that
@@ -91,6 +76,24 @@ failure, so staleness stays visible instead of silent.
 
 ** Changelog
 
+- *v13* (2026-08-25): Removed the Quiz module (=03-quiz-guide.org=) and the
+  Flashcards feature (=06-flashcards-guide.org=, =.agents/flashcards/=)
+  entirely, along with every cross-reference to either. This system exists
+  to document *how* a problem was solved, not to teach, quiz, or drill the
+  human on it afterward — the quiz-authoring/administering machinery and the
+  spaced-repetition mining pipeline were both scoped for that teaching
+  purpose and are out of scope now. =walkthrough.org= no longer has a
+  =* Quiz= section at all (not even optionally) —
+  =SCRIPTS/validate-walkthroughs.py= no longer checks for one, no longer
+  enforces the v9 quiz-timing gate, and no longer tracks
+  =#+LAST_REVIEWED:= staleness. =02-expansion-guide.org='s =For AI
+  Assistants= boilerplate is trimmed to orientation-on-load, skepticism of
+  the file's own claims, and mandatory pre-session research — Socratic-first
+  prompting, interleaved per-step recall checks, and spaced-repetition
+  tracking are removed as teaching mechanics, not just because they lived
+  next to the Quiz. The External Session Workflow's closed-question
+  self-check quiz ask is removed for the same reason; an external session
+  now closes out with just a session-export summary. Requested directly.
 - *v12* (2026-08-23): Strengthened the External Session Workflow's
   [[file:02-expansion-guide.org][CRITICAL RULE — external session output is
   a claim, not a record]] in =02-expansion-guide.org=: "verified" now

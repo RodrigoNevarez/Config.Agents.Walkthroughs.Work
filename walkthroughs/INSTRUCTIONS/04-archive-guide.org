@@ -19,9 +19,8 @@ completed packages pile up. Archiving flattens a settled package into one
 file, moved out of the way, without losing anything that still matters.
 
 Archiving is a storage-shape change, not a statement that the topic is
-closed to further learning. =#+LAST_REVIEWED:= staleness tracking and the
-=For AI Assistants= briefing keep working exactly the same on an archived
-file — it can still be dragged into a future refresher session like any
+closed off. The =For AI Assistants= briefing keeps working exactly the same
+on an archived file — it can still be dragged into a future session like any
 other walkthrough.
 
 * When to Archive
@@ -106,9 +105,9 @@ other walkthrough.
   directory after archiving is a hard failure (archiving is a move, not a
   copy), not a warning.
 - Everything else — required sections, step =:ID:=s, =*Result:*= blocks,
-  Quiz question/answer counts, guide-version gating — is checked
-  identically to an unarchived =walkthrough.org=. Archiving changes where
-  the file lives and what it's named, not what's required inside it.
+  guide-version gating — is checked identically to an unarchived
+  =walkthrough.org=. Archiving changes where the file lives and what it's
+  named, not what's required inside it.
 - There is no supporting-files check for an archived package (no
   =NN-<tool>-SESH.<ext>= linking rule to enforce) — by design, nothing but
   the single =.org= file survives archiving.
@@ -125,8 +124,7 @@ other walkthrough.
 2. Reconcile fully before deleting anything — the two CRITICAL RULEs in
    the Archive Workflow exist because deletion here is not easily
    reversible; get it right before running =rm=.
-3. Don't strip the =For AI Assistants= section, =#+LAST_REVIEWED:=, or any
-   other pedagogy on archive — same rule as
+3. Don't strip the =For AI Assistants= section on archive — same rule as
    [[file:02-expansion-guide.org][02-expansion-guide.org]]'s Best
    Practices already state for an active package.
 4. Run the validator after archiving, same as any other change to this

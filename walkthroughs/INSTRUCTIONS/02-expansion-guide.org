@@ -85,10 +85,7 @@ not just what shape it takes.
      it actually did, or what the project's eventual decision is. Working
      the step for real, live, is what that's for.
 5. *Write Notes and Search Prompts.*
-6. *Do not write the Quiz yet.* See
-   [[file:03-quiz-guide.org][03-quiz-guide.org]]'s own CRITICAL RULE on
-   why — this file doesn't restate it.
-7. *Close the issue in [[file:../index.org][index.org]]* and run the
+6. *Close the issue in [[file:../index.org][index.org]]* and run the
    validator, per the Expansion Workflow above.
 
 Every step above still happens again, for real, when the walkthrough is
@@ -126,25 +123,14 @@ miniature and the exact session-report format expected back, so the
 director/instructor handoff described there doesn't depend on the
 instructor already knowing this system's conventions.
 
-It also carries the actual pedagogy — this is what makes the file a
-self-contained "disk" that produces a real learning experience regardless
-of which AI loads it, not just a rulebook for good behavior:
+It also carries the actual substance of that briefing — this is what makes
+the file a self-contained "disk" that works the same way regardless of
+which AI loads it, not just a rulebook for good behavior:
 - *Orientation on load*, since a freshly-loaded AI has no memory of any
   earlier session on this file and would otherwise have to guess at
   progress.
-- *Socratic-first explanations* (ask what the human thinks before revealing
-  =*Why:*=) and *interleaved recall checks* after each step, instead of
-  saving all testing for the terminal Quiz — both are retrieval-practice
-  techniques, proven to beat passive reading / one-shot end tests for
-  retention.
-- *Spaced-repetition tracking* via the =#+LAST_REVIEWED:= header keyword
-  (see Template): a package whose checklist is fully checked but whose
-  =#+LAST_REVIEWED:= has gone stale gets flagged (by the validator, as a
-  warning) and is where the AI is instructed to run a refresher instead of
-  assuming a completed walkthrough needs nothing further.
-- *Skepticism of the file itself*, not just of the human's guesses — a
-  Socratic session that probes the human's answer while treating the
-  walkthrough's own Problem/=*Why:*=/citations as unquestionably correct
+- *Skepticism of the file itself*, not just of the human's guesses — trusting
+  the walkthrough's own Problem/=*Why:*=/citations as unquestionably correct
   only catches half the possible errors. Confirmation steps exist to be
   actually re-run against a real source, not narrated as already true.
   Added after a real, external-session failure mode: an AI reading this
@@ -162,9 +148,6 @@ higher — =SCRIPTS/validate-walkthroughs.py= fails a v2+ package missing it,
 same as it fails one missing =* Notes=. A package still declaring v1 is not
 retroactively required to add it; the existing version-staleness warning
 already covers that case (see 00-conventions.org's Guide Version section).
-=#+LAST_REVIEWED:= itself is checked only as a warning (missing, malformed,
-or stale-with-a-fully-checked-checklist), never a hard failure — it's
-advisory, not a validity gate.
 
 ** 1. Problem
 Concrete symptom, not a vague description: include the actual command
@@ -293,18 +276,6 @@ These queries aren't only for the human — see =For AI Assistants='s
 bullet): whatever AI loads this file is required to run every one of these
 itself before starting, as its own independent grounding.
 
-** 5. Quiz
-
-A =* Quiz= heading with exactly five open-ended questions plus a
-=** Answer Key= subsection with exactly five answers — see
-[[file:03-quiz-guide.org][03-quiz-guide.org]] for the full rules on
-writing these questions well, *when* to write them, and actually
-running/grading the quiz session. Don't restate its content here; that
-guide is the single source of truth for this section, the same way
-[[file:00-conventions.org][00-conventions.org]] is for UUIDs and guide
-versioning. Notably: this section does *not* get written during the
-Authoring Workflow above — see 03-quiz-guide.org's CRITICAL RULE on timing.
-
 * Step-Level Expansion
 
 The =*Why:*= line is deliberately short — a sentence or two, enough to
@@ -396,9 +367,6 @@ These are behavior rules for the agent, not just document formatting:
    phrases — write the queries a person would actually type, the way
    they'd have had to before an agent could just do the searching
    (and the thinking) for them.
-7. Never skip Quiz, and never write a question answerable without
-   understanding (yes/no, or a question whose answer is just the
-   =*Why:*= line copied verbatim).
 
 * External Session Workflow
 
@@ -419,14 +387,9 @@ matters is who is driving, not which chat window is open.
    relevant step(s)) into the external session and follow its own
    =*[you-run]*=/=*[agent-run]*= tags and =*Why:*= lines as the script for
    that conversation.
-2. *Close out the external session deliberately*, by asking it for two
-   things:
-   - A closed-question self-check quiz (multiple-choice / true-false /
-     short factual recall) — supplementary practice, a different *kind* of
-     check than the walkthrough's own quiz, never a replacement for it (see
-     CRITICAL RULE below).
-   - A session-export summary: what was covered, key learnings, and what's
-     still outstanding.
+2. *Close out the external session deliberately*, by asking it for a
+   session-export summary: what was covered, key learnings, and what's
+   still outstanding.
 3. *Save the raw export in whatever format the tool actually produced,
    renamed to fit the convention.* Most external AI products cannot emit
    =.org= — Gemini, for instance, exports Markdown. That's fine; don't
@@ -456,8 +419,8 @@ missing its required Notes link.
 ** CRITICAL RULE — external session output is a claim, not a record
 
 A session-export file's prose (or a paraphrased "step done" claim) must
-never by itself check a checklist box, fill in a =*Result:*=, or answer the
-walkthrough's own Quiz. Reconciling a step still requires the same real,
+never by itself check a checklist box or fill in a =*Result:*=. Reconciling
+a step still requires the same real,
 verified output this guide already requires elsewhere — the raw command
 output, the actual request/response payload, etc. — pasted into the step
 itself. If that real output isn't available, the step stays unchecked, same
@@ -480,15 +443,6 @@ checking happened once, elsewhere, by a different AI. See
 in the Template below — this is that same discipline, applied specifically
 to reconciling a SESH file rather than to a fresh step.
 
-** CRITICAL RULE — a closed-question self-check quiz never satisfies the walkthrough's own Quiz
-
-The 5-question open-ended Quiz + Answer Key in =walkthrough.org= (below) is
-what the merge-gating rule checks. A closed-question quiz generated in an
-external session is real signal about self-understanding and worth keeping
-(link it from Notes), but it tests a different thing (recall/recognition,
-closed-form) than the open-ended Quiz (explanation, open-form) — one never
-substitutes for the other.
-
 ** CRITICAL RULE — link every session-export file
 
 Once reconciled, a =*-SESH.<ext>= file must be linked from
@@ -510,7 +464,6 @@ check entirely, not just unlinked.
 #+TITLE: <Imperative, specific problem statement>
 #+DATE: <ISO date>
 #+WALKTHROUGH_GUIDE_VERSION: <current version, from 00-conventions.org>
-#+LAST_REVIEWED: <ISO date, same as #+DATE: initially>
 
 * For AI Assistants
 
@@ -549,29 +502,12 @@ before doing anything else.
   already informed enough to catch a wrong claim in this file, the same way
   the two rules above ask of you for individual steps — just done once, up
   front, instead of only when a step happens to ask for it.
-- This file is being used to teach, not to get a task finished quickly. Do
-  not run or solve a =*[you-run]*= step yourself and report the result —
-  offer it to the human and let them run it. Only execute a step directly
-  if it's tagged =*[agent-run]*=, or the human explicitly asks you to.
-- *Ask before you tell.* Before revealing a step's =*Why:*=, ask the human
-  what they think the mechanism is and let them attempt an answer first —
-  use the =*Why:*= line as your answer key to check their guess against,
-  not as a script to recite outright. Don't skip this to save time.
-- *Check before moving on.* After a step is discussed and about to be
-  checked off, ask the human one short recall question about what that
-  step actually demonstrated, in their own words, before moving to the
-  next step. One big test at the end (the Quiz) is worse for retention
-  than checking understanding along the way — don't let it be the only
-  check.
+- This file documents how a problem was actually solved. Do not run or
+  solve a =*[you-run]*= step yourself and report the result — offer it to
+  the human and let them run it. Only execute a step directly if it's
+  tagged =*[agent-run]*=, or the human explicitly asks you to.
 - Follow-up questions, tangents, and exploring adjacent behavior are
-  encouraged — that's how understanding generalizes past this one file. You
-  are not required to stay rigidly on-script.
-- *If this looks like a review, not a first pass* — most/all steps already
-  checked, and =#+LAST_REVIEWED:= is more than a few weeks old — treat it
-  as one: before doing anything new, run the human through a short
-  refresher (a handful of closed-question recall checks on
-  already-completed steps), then update =#+LAST_REVIEWED:= to today's date
-  once done.
+  encouraged. You are not required to stay rigidly on-script.
 - When the session is ending, produce a session-export summary (the human
   will save it alongside this file). For every step actually worked,
   include:
@@ -581,15 +517,11 @@ before doing anything else.
     request/response payloads — never a paraphrase or a guess at what it
     would show;
   - anywhere the human hesitated, guessed, or got something wrong before
-    getting it right — that's real signal for what still needs
-    reinforcing, and smoothing it into a clean summary hides it.
-- If asked to produce a self-check quiz, make it closed-question
-  (multiple-choice / true-false / short recall). That quiz is supplementary
-  practice only — it does not replace or satisfy this file's own =* Quiz=
-  section below, which stays open-ended by design.
-- Nothing in your summary checks a box or answers a quiz on its own. A
-  human (or another agent) still reconciles it afterward against this rule:
-  no step is marked done without its own real, verified output.
+    getting it right, since that's still relevant context for whoever
+    reconciles the session afterward.
+- Nothing in your summary checks a box on its own. A human (or another
+  agent) still reconciles it afterward against this rule: no step is marked
+  done without its own real, verified output.
 
 * Problem
 
@@ -630,31 +562,6 @@ before doing anything else.
   transferable study>
 #+END_SRC
 
-Do *not* add a =* Quiz= section to the file yet — a freshly-expanded
-package ends here, at Search Prompts, per
-[[file:03-quiz-guide.org][03-quiz-guide.org]]'s CRITICAL RULE. Once every
-step in the Guide above has a real =*Result:*= block, append:
-
-#+BEGIN_SRC org
-* Quiz
-
-1. <Open-ended question testing the why behind one step>
-2. <Open-ended question, ideally posed against a slightly different
-   scenario than the one actually solved here>
-3. <...>
-4. <...>
-5. <...>
-
-** Answer Key
-
-1. <Grading guidance — what a correct answer must include, not
-   necessarily verbatim wording>
-2. <...>
-3. <...>
-4. <...>
-5. <...>
-#+END_SRC
-
 * Best Practices
 
 1. One walkthrough per distinct problem — don't bundle unrelated
@@ -681,26 +588,21 @@ step in the Guide above has a real =*Result:*= block, append:
    the same queries too, but for its own pre-session grounding — see
    =For AI Assistants='s =Mandatory pre-session research= pillar — not
    as a substitute for the human doing it.
-8. Writing and running the Quiz has its own full best-practices list in
-   [[file:03-quiz-guide.org][03-quiz-guide.org]] — don't restate it here.
-9. *External sessions count as the human doing the work* — working
+8. *External sessions count as the human doing the work* — working
    =[you-run]= steps in a separate AI chat and bringing back a
    =*-SESH.<ext>= export (see External Session Workflow above) is a valid way
    to work a walkthrough. What doesn't count is skipping reconciliation:
    the export's claims must become real, verified output pasted into the
    step before anything gets checked off, and the file must be linked from
    Notes.
-10. *Run the validator* before considering a package done —
-    =SCRIPTS/validate-walkthroughs.py= checks the required sections all
-    exist, every step has a valid unique =:ID:=, the Quiz has exactly 5
-    questions and the Answer Key exactly 5 answers, and the guide
-    version matches current. Treat every CRITICAL RULE above as
-    something this script can and does check, not just prose to
-    remember.
-11. *Don't strip the pedagogy out of =For AI Assistants= to shorten a
-    package.* Orientation-on-load, Socratic-first explanations,
-    interleaved recall checks, skepticism of the file's own claims, and
-    =#+LAST_REVIEWED:= tracking are the actual mechanism that makes this a
-    learning artifact instead of a fix log an AI happens to read aloud.
-    Trimming that section down to "don't do steps for the human" keeps the
-    letter of the Teaching Contract but loses most of what makes it work.
+9. *Run the validator* before considering a package done —
+   =SCRIPTS/validate-walkthroughs.py= checks the required sections all
+   exist, every step has a valid unique =:ID:=, and the guide version
+   matches current. Treat every CRITICAL RULE above as something this
+   script can and does check, not just prose to remember.
+10. *Don't strip =For AI Assistants= down to shorten a package.*
+    Orientation-on-load and skepticism of the file's own claims are the
+    actual mechanism that keeps this a reliable record instead of a fix log
+    an AI happens to read aloud. Trimming that section down to "don't do
+    steps for the human" keeps the letter of the Teaching Contract but
+    loses most of what makes it work.
