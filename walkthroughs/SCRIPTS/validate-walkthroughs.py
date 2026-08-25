@@ -1,0 +1,581 @@
+#!/usr/bin/env python3
+"""Validate .agents/walkthroughs/ (and .agents/wikis/) against the rules in
+INSTRUCTIONS/00-conventions.org, 01-index-guide.org, 02-expansion-guide.org,
+03-quiz-guide.org, 04-archive-guide.org, and 05-wiki-guide.org. Exits
+non-zero if any check fails.
+
+Usage: .agents/walkthroughs/SCRIPTS/validate-walkthroughs.py
+"""
+
+import re
+import sys
+from datetime import date
+from pathlib import Path
+
+WT_DIR = Path(__file__).resolve().parent.parent
+ROOT = WT_DIR.parent.parent
+INDEX = WT_DIR / "index.org"
+CONVENTIONS = WT_DIR / "INSTRUCTIONS" / "00-conventions.org"
+ARCHIVE_DIR = WT_DIR / "archive"
+WIKIS_DIR = WT_DIR.parent / "wikis"
+WIKI_META_FILES = {"index.org", "CHANGELOG.org"}
+SKIP_DIRS = {"INSTRUCTIONS", "SCRIPTS", "archive"}
+
+UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I
+)
+UUID_ANY_RE = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.I
+)
+ARCHIVE_FILE_RE = re.compile(
+    r"^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.org$", re.I
+)
+SESH_RE = re.compile(r"^\d+-.+-SESH\.\w+$", re.I)
+SESH_LOOSE_RE = re.compile(r"sesh", re.I)
+DANGLING_SESH_LINK_RE = re.compile(r"\[\[file:[^\]]*\d+-[^\]/]+-SESH\.\w+", re.I)
+FILE_LINK_RE = re.compile(r"\[\[file:([^\]]+)\]")
+CHECKED_STEP_RE = re.compile(r"^-\s+\[[Xx]\]\s+\S")
+RESULT_RE = re.compile(r"^\s*\*Result:\*\s*\S")
+LAST_REVIEWED_RE = re.compile(r"^#\+LAST_REVIEWED:\s*(\S+)", re.M)
+STALE_REVIEW_DAYS = 30
+
+failures = []
+warnings = []
+seen_uuids = {}  # lowercased uuid -> first location string
+
+
+def fail(msg):
+    failures.append(msg)
+
+
+def warn(msg):
+    warnings.append(msg)
+
+
+def register_uuid(uuid, location):
+    if not UUID_RE.match(uuid):
+        fail(f"{location}: '{uuid}' is not a valid UUID")
+        return
+    key = uuid.lower()
+    if key in seen_uuids:
+        fail(f"{location}: UUID {uuid} collides with {seen_uuids[key]}")
+    else:
+        seen_uuids[key] = location
+
+
+def extract_drawer_id(lines, start, stop):
+    """First :ID: value inside a :PROPERTIES:...:END: drawer in lines[start:stop]."""
+    in_drawer = False
+    id_val = None
+    for line in lines[start:stop]:
+        s = line.strip()
+        if s == ":PROPERTIES:":
+            in_drawer = True
+            continue
+        if s == ":END:":
+            in_drawer = False
+            continue
+        if in_drawer and re.match(r"^:ID:\s*", s, re.I):
+            id_val = re.sub(r"^:ID:\s*", "", s, flags=re.I).strip()
+    return id_val
+
+
+def extract_drawer_step(lines, start, stop):
+    """First :STEP: value inside a :PROPERTIES:...:END: drawer in lines[start:stop]."""
+    in_drawer = False
+    step_val = None
+    for line in lines[start:stop]:
+        s = line.strip()
+        if s == ":PROPERTIES:":
+            in_drawer = True
+            continue
+        if s == ":END:":
+            in_drawer = False
+            continue
+        if in_drawer and re.match(r"^:STEP:\s*", s, re.I):
+            step_val = re.sub(r"^:STEP:\s*", "", s, flags=re.I).strip()
+    return step_val
+
+
+seen_steps = {}  # int -> first location string, index.org's own :STEP: sequence
+
+
+def register_step(step_val, location):
+    if not re.match(r"^\d+$", step_val or ""):
+        fail(f"{location}: ':STEP:' value '{step_val}' is not a positive integer")
+        return
+    key = int(step_val)
+    if key in seen_steps:
+        fail(f"{location}: ':STEP:' {key} collides with {seen_steps[key]}")
+    else:
+        seen_steps[key] = location
+
+
+def current_guide_version():
+    if not CONVENTIONS.exists():
+        fail(f"{CONVENTIONS.relative_to(ROOT)}: file is missing")
+        return None
+    text = CONVENTIONS.read_text()
+    m = re.search(r"^#\+WALKTHROUGH_GUIDE_VERSION:\s*(\S+)", text, re.M)
+    if not m:
+        fail(f"{CONVENTIONS.relative_to(ROOT)}: missing #+WALKTHROUGH_GUIDE_VERSION:")
+        return None
+    return m.group(1)
+
+
+def validate_index():
+    """Returns {uuid: {"state", "title", "has_link", "loc"}}."""
+    node_ids = {}
+    if not INDEX.exists():
+        fail(f"{INDEX.relative_to(ROOT)}: file is missing")
+        return node_ids
+
+    lines = INDEX.read_text().splitlines()
+    heading_idxs = [i for i, l in enumerate(lines) if re.match(r"^\*+\s", l)]
+
+    for i, line in enumerate(lines):
+        m = re.match(r"^\*\*\*\s+(TODO|DONE)\s+(.*)$", line)
+        if not m:
+            continue
+        state, title = m.group(1), m.group(2).strip()
+        loc = f"index.org:{i + 1}"
+
+        if UUID_ANY_RE.search(title):
+            fail(f"{loc}: heading text contains a raw UUID: '{title}'")
+
+        next_idx = next((h for h in heading_idxs if h > i), len(lines))
+        node_id = extract_drawer_id(lines, i + 1, next_idx)
+        if not node_id:
+            fail(f"{loc}: node '{title}' has no :ID: drawer")
+            continue
+        register_uuid(node_id, loc)
+
+        step_val = extract_drawer_step(lines, i + 1, next_idx)
+        if not step_val:
+            fail(f"{loc}: node '{title}' has no :STEP: property")
+        else:
+            register_step(step_val, loc)
+
+        has_link = any(
+            f"file:{node_id}/walkthrough.org" in l or f"file:archive/{node_id}.org" in l
+            for l in lines[i + 1 : next_idx]
+        )
+        node_ids[node_id] = {
+            "state": state,
+            "title": title,
+            "has_link": has_link,
+            "loc": loc,
+        }
+        if state == "DONE" and not has_link:
+            fail(f"{loc}: DONE node '{title}' has no walkthrough link")
+        if state == "TODO" and has_link:
+            warn(f"{loc}: TODO node '{title}' has a walkthrough link — should this be DONE?")
+
+    return node_ids
+
+
+def find_package_dirs():
+    dirs = {}
+    if not WT_DIR.is_dir():
+        return dirs
+    for p in WT_DIR.iterdir():
+        if not p.is_dir() or p.name in SKIP_DIRS:
+            continue
+        if not UUID_RE.match(p.name):
+            warn(f"{p.relative_to(ROOT)}: directory name is not a UUID, skipping")
+            continue
+        dirs[p.name] = p
+    return dirs
+
+
+def find_archived_packages():
+    """{uuid: path} for archive/<uuid>.org files."""
+    files = {}
+    if not ARCHIVE_DIR.is_dir():
+        return files
+    for p in ARCHIVE_DIR.iterdir():
+        if not p.is_file():
+            continue
+        m = ARCHIVE_FILE_RE.match(p.name)
+        if not m:
+            warn(f"{p.relative_to(ROOT)}: filename is not '<uuid>.org', skipping")
+            continue
+        files[m.group(1)] = p
+    return files
+
+
+def cross_check(node_ids, package_dirs, archived):
+    dupes = set(package_dirs) & set(archived)
+    for node_id in dupes:
+        fail(
+            f"{node_id}: exists both as an active "
+            f".agents/walkthroughs/{node_id}/ directory and as "
+            f".agents/walkthroughs/archive/{node_id}.org — archiving is a "
+            f"move, not a copy; delete the active directory"
+        )
+
+    for node_id, info in node_ids.items():
+        if info["state"] == "DONE" and node_id not in package_dirs and node_id not in archived:
+            fail(
+                f"{info['loc']}: DONE node '{info['title']}' has no matching "
+                f".agents/walkthroughs/{node_id}/ directory or "
+                f".agents/walkthroughs/archive/{node_id}.org file"
+            )
+    for dir_id, path in package_dirs.items():
+        rel = path.relative_to(ROOT)
+        if dir_id not in node_ids:
+            fail(f"{rel}: no matching index.org node for this UUID")
+        elif node_ids[dir_id]["state"] != "DONE":
+            fail(f"{rel}: package exists but index.org node is not DONE")
+    for arc_id, path in archived.items():
+        rel = path.relative_to(ROOT)
+        if arc_id not in node_ids:
+            fail(f"{rel}: no matching index.org node for this UUID")
+        elif node_ids[arc_id]["state"] != "DONE":
+            fail(f"{rel}: archived package exists but index.org node is not DONE")
+
+
+REQUIRED_SECTIONS = ["Notes", "Search Prompts"]
+# New required sections go here keyed by the guide version that introduced
+# them, so old packages that haven't bumped their own version tag yet are
+# only flagged via the version-staleness warning, not a hard failure —
+# honoring 00-conventions.org's "not required to retrofit immediately" rule.
+REQUIRED_SECTIONS_SINCE = {
+    "For AI Assistants": 2,
+}
+RESULT_BLOCK_REQUIRED_SINCE = 3
+# Before this version, '* Quiz' was unconditionally required (old behavior,
+# preserved below for packages that haven't bumped past it). From this
+# version on, a Quiz must not exist until the Guide checklist is fully
+# checked, and becomes required once it is — see 03-quiz-guide.org's
+# CRITICAL RULE on quiz-authoring timing.
+QUIZ_TIMING_REQUIRED_SINCE = 9
+
+
+def count_numbered(lines, start, stop):
+    return sum(1 for i in range(start, stop) if re.match(r"^\d+\.\s+\S", lines[i]))
+
+
+def validate_walkthrough(wt_id, path, current_version):
+    rel = path.relative_to(ROOT)
+    text = path.read_text()
+    lines = text.splitlines()
+
+    top_headings = [(i, l) for i, l in enumerate(lines) if re.match(r"^\*\s+\S", l)]
+    titles = [re.sub(r"^\*\s+", "", l).strip() for _, l in top_headings]
+
+    if "Problem" not in titles:
+        fail(f"{rel}: missing '* Problem' section")
+
+    guide_idx = None
+    for idx, (_, l) in enumerate(top_headings):
+        if re.match(r"^\*\s+(TODO|DONE)\s+.*\[\d+/\d+\]", l):
+            guide_idx = idx
+            break
+    if guide_idx is None:
+        fail(f"{rel}: missing Guide checklist heading ('* TODO <title> [x/n]')")
+
+    for name in REQUIRED_SECTIONS:
+        if name not in titles:
+            fail(f"{rel}: missing '* {name}' section")
+
+    m = re.search(r"^#\+WALKTHROUGH_GUIDE_VERSION:\s*(\S+)", text, re.M)
+    pkg_version = m.group(1) if m else None
+    if not m:
+        warn(f"{rel}: no #+WALKTHROUGH_GUIDE_VERSION: line")
+    elif current_version and pkg_version != current_version:
+        warn(
+            f"{rel}: guide version {pkg_version} is behind current "
+            f"({current_version}) — may be missing newer required sections"
+        )
+
+    try:
+        pkg_version_int = int(pkg_version) if pkg_version is not None else None
+    except ValueError:
+        pkg_version_int = None
+    for name, since in REQUIRED_SECTIONS_SINCE.items():
+        if (
+            pkg_version_int is not None
+            and pkg_version_int >= since
+            and name not in titles
+        ):
+            fail(
+                f"{rel}: missing '* {name}' section (required since guide "
+                f"v{since}; this package declares v{pkg_version})"
+            )
+
+    for i, l in top_headings:
+        if UUID_ANY_RE.search(l):
+            fail(f"{rel}:{i + 1}: heading text contains a raw UUID")
+
+    if guide_idx is not None:
+        start = top_headings[guide_idx][0] + 1
+        end = (
+            top_headings[guide_idx + 1][0]
+            if guide_idx + 1 < len(top_headings)
+            else len(lines)
+        )
+        step_idxs = [
+            i for i in range(start, end) if re.match(r"^-\s+\[[ Xx]\]\s+\S", lines[i])
+        ]
+        for si, step_i in enumerate(step_idxs):
+            step_end = step_idxs[si + 1] if si + 1 < len(step_idxs) else end
+            step_loc = f"{rel}:{step_i + 1}"
+            if UUID_ANY_RE.search(lines[step_i]):
+                fail(f"{step_loc}: step text contains a raw UUID")
+            step_id = extract_drawer_id(lines, step_i + 1, step_end)
+            if not step_id:
+                fail(f"{step_loc}: checklist step has no :ID: drawer")
+                continue
+            register_uuid(step_id, step_loc)
+
+            if (
+                pkg_version_int is not None
+                and pkg_version_int >= RESULT_BLOCK_REQUIRED_SINCE
+                and CHECKED_STEP_RE.match(lines[step_i])
+            ):
+                has_result = any(
+                    RESULT_RE.match(l) for l in lines[step_i + 1 : step_end]
+                )
+                if not has_result:
+                    fail(
+                        f"{step_loc}: step is checked [X] but has no "
+                        f"non-empty '*Result:*' block — no step is marked "
+                        f"done without its own real, verified output "
+                        f"(required since guide v{RESULT_BLOCK_REQUIRED_SINCE}; "
+                        f"this package declares v{pkg_version})"
+                    )
+
+    fully_checked = False
+    if guide_idx is not None:
+        cookie = re.search(r"\[(\d+)/(\d+)\]", top_headings[guide_idx][1])
+        if cookie and cookie.group(1) == cookie.group(2):
+            fully_checked = True
+
+    lr_m = LAST_REVIEWED_RE.search(text)
+    if not lr_m:
+        warn(f"{rel}: no #+LAST_REVIEWED: line — spaced-repetition staleness can't be tracked")
+    else:
+        try:
+            last_reviewed = date.fromisoformat(lr_m.group(1))
+        except ValueError:
+            warn(f"{rel}: #+LAST_REVIEWED: '{lr_m.group(1)}' is not a valid ISO date (YYYY-MM-DD)")
+        else:
+            age_days = (date.today() - last_reviewed).days
+            if fully_checked and age_days > STALE_REVIEW_DAYS:
+                warn(
+                    f"{rel}: all steps checked but last reviewed {age_days} "
+                    f"days ago — consider a refresher session, then update "
+                    f"#+LAST_REVIEWED:"
+                )
+
+    quiz_start = next(
+        (i for i, l in enumerate(lines) if re.match(r"^\*\s+Quiz\s*$", l)), None
+    )
+    quiz_present = quiz_start is not None
+
+    quiz_timing_gated = (
+        pkg_version_int is not None and pkg_version_int >= QUIZ_TIMING_REQUIRED_SINCE
+    )
+    if quiz_timing_gated:
+        if quiz_present and not fully_checked:
+            fail(
+                f"{rel}: '* Quiz' section is present but the Guide checklist "
+                f"isn't fully checked yet — a Quiz must not be authored "
+                f"until every step has a real '*Result:*' block, so a "
+                f"decision doesn't get pre-baked into the questions before "
+                f"it's actually reached (required since guide "
+                f"v{QUIZ_TIMING_REQUIRED_SINCE}; this package declares "
+                f"v{pkg_version}; see 03-quiz-guide.org)"
+            )
+        if fully_checked and not quiz_present:
+            fail(
+                f"{rel}: Guide checklist is fully checked but there is no "
+                f"'* Quiz' section (required once complete, since guide "
+                f"v{QUIZ_TIMING_REQUIRED_SINCE}; this package declares "
+                f"v{pkg_version})"
+            )
+    elif not quiz_present:
+        fail(f"{rel}: missing '* Quiz' section")
+
+    if quiz_present:
+        quiz_end = next(
+            (
+                i
+                for i in range(quiz_start + 1, len(lines))
+                if re.match(r"^\*\s+\S", lines[i])
+            ),
+            len(lines),
+        )
+        ak_start = next(
+            (
+                i
+                for i in range(quiz_start + 1, quiz_end)
+                if re.match(r"^\*\*\s+Answer Key\s*$", lines[i])
+            ),
+            None,
+        )
+        if ak_start is None:
+            fail(f"{rel}: Quiz section has no '** Answer Key' subsection")
+            qcount = count_numbered(lines, quiz_start + 1, quiz_end)
+            acount = None
+        else:
+            qcount = count_numbered(lines, quiz_start + 1, ak_start)
+            acount = count_numbered(lines, ak_start + 1, quiz_end)
+
+        if qcount != 5:
+            fail(f"{rel}: Quiz has {qcount} question(s), must be exactly 5")
+        if acount is not None and acount != 5:
+            fail(f"{rel}: Answer Key has {acount} entr(y/ies), must be exactly 5")
+
+
+def validate_supporting_files(dir_path, wt_text):
+    """Every NN-<tool>-SESH.<ext> export in a package dir must be linked
+    from that package's walkthrough.org (External Session Workflow rule).
+    Any extension is fine — the export stays in its native format, never
+    converted to .org (see 00-conventions.org's Changelog, v6)."""
+    for p in dir_path.iterdir():
+        if not p.is_file() or p.name == "walkthrough.org":
+            continue
+        if SESH_RE.match(p.name):
+            if f"file:{p.name}" not in wt_text:
+                fail(
+                    f"{p.relative_to(ROOT)}: session-export file is not linked "
+                    f"from walkthrough.org (expected a 'file:{p.name}' link, "
+                    f"e.g. in Notes)"
+                )
+        elif SESH_LOOSE_RE.search(p.name):
+            fail(
+                f"{p.relative_to(ROOT)}: filename looks like a session export "
+                f"but doesn't match the required 'NN-<tool>-SESH.<ext>' pattern "
+                f"(e.g. '01-GEMINI-SESH.md') — a name missing the sequence "
+                f"number or the tool name is invisible to the linking check "
+                f"above, which is exactly what this catches"
+            )
+
+
+def validate_archived_no_dangling_sesh_links(path, text):
+    """A SESH export can never legitimately exist next to an archived
+    <uuid>.org file (it's deleted during archiving) — so any link to one
+    is guaranteed dangling. See 04-archive-guide.org CRITICAL RULE 4."""
+    rel = path.relative_to(ROOT)
+    for m in DANGLING_SESH_LINK_RE.finditer(text):
+        fail(
+            f"{rel}: contains a dangling 'file:' link to a SESH export "
+            f"({m.group(0)}...) — SESH files are deleted on archiving; "
+            f"rewrite this as plain text (see 04-archive-guide.org "
+            f"CRITICAL RULE 4)"
+        )
+
+
+def validate_no_dangling_file_links(path, text):
+    """Every [[file:...]] link in a file this system actively maintains
+    must resolve to a real file, relative to that file's own directory —
+    a wrong number of '../' is exactly the kind of mistake that's easy to
+    make and easy to miss by reading, since it looks correct until
+    something actually tries to follow it. Hit twice in practice while
+    writing cross-links from an active package directory to .agents/wikis/
+    before this check existed."""
+    rel = path.relative_to(ROOT)
+    for m in FILE_LINK_RE.finditer(text):
+        target = m.group(1).split("::", 1)[0]
+        if not target or target.startswith(("http:", "https:", "mailto:")):
+            continue
+        target_path = (
+            (ROOT / target.lstrip("/")) if target.startswith("/")
+            else (path.parent / target)
+        ).resolve()
+        if not target_path.exists():
+            fail(f"{rel}: dangling 'file:' link, target does not exist: "
+                 f"{target}")
+
+
+def validate_wikis():
+    """See INSTRUCTIONS/05-wiki-guide.org's 'What the Validator Checks'."""
+    if not WIKIS_DIR.is_dir():
+        return
+    index_file = WIKIS_DIR / "index.org"
+    if not index_file.exists():
+        fail(f"{WIKIS_DIR.relative_to(ROOT)}: missing index.org")
+        return
+    index_text = index_file.read_text()
+
+    for p in WIKIS_DIR.iterdir():
+        if not p.is_file() or p.name in WIKI_META_FILES:
+            continue
+        rel = p.relative_to(ROOT)
+        if p.suffix != ".org":
+            fail(f"{rel}: every file in .agents/wikis/ must be .org "
+                 f"(readable in Emacs like everything else in this system)")
+            continue
+        if f"file:{p.name}" not in index_text:
+            fail(f"{rel}: page is not linked from wikis/index.org — an "
+                 f"orphaned page defeats the point of a single entry point")
+
+        text = p.read_text()
+        lines = text.splitlines()
+        page_id = extract_drawer_id(lines, 0, len(lines))
+        if not page_id:
+            fail(f"{rel}: no ':PROPERTIES:'/':ID:' drawer found")
+        else:
+            register_uuid(page_id, str(rel))
+
+        jb_links = re.findall(r"\[\[file:(\.\./walkthroughs/archive/[^\]]+\.org)\]", text)
+        if not jb_links:
+            fail(f"{rel}: no '* Justified By' link to an archived "
+                 f"walkthrough found")
+        for link in jb_links:
+            target = (WIKIS_DIR / link).resolve()
+            if not target.exists():
+                fail(f"{rel}: 'Justified By' link target does not exist: {link}")
+
+        validate_no_dangling_file_links(p, text)
+
+    for meta in WIKI_META_FILES:
+        meta_path = WIKIS_DIR / meta
+        if meta_path.exists():
+            validate_no_dangling_file_links(meta_path, meta_path.read_text())
+
+
+def main():
+    current_version = current_guide_version()
+    node_ids = validate_index()
+    package_dirs = find_package_dirs()
+    archived = find_archived_packages()
+    cross_check(node_ids, package_dirs, archived)
+
+    if INDEX.exists():
+        validate_no_dangling_file_links(INDEX, INDEX.read_text())
+
+    for wt_id, dir_path in sorted(package_dirs.items()):
+        wt_file = dir_path / "walkthrough.org"
+        if not wt_file.exists():
+            fail(f"{dir_path.relative_to(ROOT)}: missing walkthrough.org")
+            continue
+        validate_walkthrough(wt_id, wt_file, current_version)
+        validate_supporting_files(dir_path, wt_file.read_text())
+        validate_no_dangling_file_links(wt_file, wt_file.read_text())
+
+    for arc_id, arc_file in sorted(archived.items()):
+        # Archived files carry identical content requirements to an active
+        # walkthrough.org — only their location and filename differ. No
+        # validate_supporting_files call: archiving means there's nothing
+        # left to check (SESH exports are deleted, not moved).
+        validate_walkthrough(arc_id, arc_file, current_version)
+        validate_archived_no_dangling_sesh_links(arc_file, arc_file.read_text())
+        validate_no_dangling_file_links(arc_file, arc_file.read_text())
+
+    validate_wikis()
+
+    for w in warnings:
+        print(f"WARN: {w}")
+    for f in failures:
+        print(f"FAIL: {f}")
+
+    print()
+    print(f"{len(failures)} failure(s), {len(warnings)} warning(s)")
+    sys.exit(1 if failures else 0)
+
+
+if __name__ == "__main__":
+    main()

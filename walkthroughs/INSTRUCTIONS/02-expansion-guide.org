@@ -1,0 +1,706 @@
+#+TITLE: Walkthrough Expansion Guide
+
+This guide details the procedure for expanding an
+[[file:../index.org][index.org]] topic node into its own standalone
+walkthrough package. See
+[[file:01-index-guide.org][01-index-guide.org]] for the index's own
+structure, and [[file:00-conventions.org][00-conventions.org]] for the
+UUID and guide-version rules this file assumes throughout.
+
+* Purpose
+
+An agent that silently fixes things produces working software and a
+human who has learned nothing. A walkthrough package exists to counter
+that: it forces the *why* behind a fix to be written down, not just
+the *what*, and it deliberately hands some steps back to the human to
+execute themselves.
+
+* Expansion Workflow
+
+1. *Locate or file the issue*: find the target =TODO= node in
+   [[file:../index.org][index.org]] by its =:ID:= (or file a new one,
+   per [[file:01-index-guide.org][01-index-guide.org]], if it isn't
+   there yet).
+2. *Create the package directory*: =.agents/walkthroughs/<uuid>/=,
+   using the node's own =:ID:= as the directory name.
+3. *Write the package's main file*: =.agents/walkthroughs/<uuid>/walkthrough.org=,
+   following the template below.
+4. *Add supporting files if useful*: a script that was actually
+   written as part of the fix, a captured log, a config diff — these
+   live alongside =walkthrough.org= in the same directory and get
+   linked from it with relative =file:= links, instead of pasting
+   everything inline as source blocks.
+5. *Close the issue*: in =index.org=, flip the node's state from
+   =TODO= to =DONE= and add a
+   =- *Walkthrough:* [[file:<uuid>/walkthrough.org][Topic Title]]=
+   line under it, pointing at the package.
+
+** UUID Placement
+Same rule as the index, and the same rule one level down for steps
+(see the Guide section below): every UUID comes from a real generator
+and lives strictly inside a =:PROPERTIES:= drawer, never in visible
+heading or step text. See
+[[file:00-conventions.org][00-conventions.org]]'s UUID Convention
+section — it's the single copy of this rule; don't restate it.
+
+* Authoring Workflow
+
+The Expansion Workflow above covers the mechanical steps — where files go,
+what gets renamed. This section is the source of truth for what actually
+happens while step 3 ("write the package's main file") is being done — the
+real research-and-writing process behind a fresh =walkthrough.org=, not
+just the resulting file structure. Written down explicitly because relying
+on this system means knowing what actually grounds a walkthrough's content,
+not just what shape it takes.
+
+1. *Read the target issue's own description* in
+   [[file:../index.org][index.org]] — usually already scoped by links to
+   existing wiki pages and prior archived walkthroughs. Read those too,
+   before writing anything.
+2. *Do real research before writing the Problem section.* Fetch real,
+   current, external sources — official docs, specs, API references — not
+   unstated assumption or memory alone. A claim in the Problem section or a
+   step's =*Why:*= must be traceable to something a reader could
+   independently go check, the same evidentiary standard the rest of this
+   system holds every =*Result:*= block to (see
+   [[file:00-conventions.org][00-conventions.org]]).
+   - *CRITICAL RULE — verify a citation before reusing it.* Before citing an
+     earlier walkthrough or wiki page as having already established some
+     fact, open that file and check the fact is actually in there — don't
+     reuse a citation from memory, or from how the issue happened to be
+     phrased in =index.org=. Found by hitting this exact case:
+     =index.org='s own description for issue =44c128d0= cited the
+     architecture walkthrough for a claim that walkthrough never actually
+     made — an =initialize= capability list naming =logging= is not the
+     same as confirming the stdio/stderr constraint.
+3. *Write the Problem section*, citing the research from step 2 and linking
+   related wiki pages/walkthroughs.
+4. *Write the Guide's steps*, each with a =*Why:*= line.
+   - *CRITICAL RULE — a =*Why:*= explains the mechanism, never the eventual
+     answer.* By the time this step is written, the author (frequently an
+     AI that already did step 2's research) usually already has a good
+     guess at the final decision. A =*Why:*= line may explain *why the
+     step's question matters* and what it would mean if the evidence came
+     out one way or another — it must not state or clearly imply which way
+     it actually did, or what the project's eventual decision is. Working
+     the step for real, live, is what that's for.
+5. *Write Notes and Search Prompts.*
+6. *Do not write the Quiz yet.* See
+   [[file:03-quiz-guide.org][03-quiz-guide.org]]'s own CRITICAL RULE on
+   why — this file doesn't restate it.
+7. *Close the issue in [[file:../index.org][index.org]]* and run the
+   validator, per the Expansion Workflow above.
+
+Every step above still happens again, for real, when the walkthrough is
+actually worked — this describes how the *unworked* file gets written, not
+a substitute for doing the steps themselves later.
+
+* When to Close an Issue
+
+- *Close it* (expand into a walkthrough) for any troubleshooting,
+  configuration, or setup task that took real diagnosis — more than
+  one obvious command, or anything where the fix isn't self-evident
+  from the error message.
+- *Leave it open, or don't even file it* for trivial, well-known
+  one-liners with no learning value.
+
+* Required Structure of =walkthrough.org=
+
+The file header carries a =#+WALKTHROUGH_GUIDE_VERSION:= line, matching
+the current version in
+[[file:00-conventions.org][00-conventions.org]], directly under
+=#+DATE:=. This is what lets =SCRIPTS/validate-walkthroughs.py= tell a
+package written against the current rules apart from one that predates
+a later structural change — see 00-conventions.org's Guide Version
+section for what "current" means and when to bump it.
+
+** 0. For AI Assistants
+
+A fixed section, identical boilerplate across every package (see the
+Template below for its exact text), addressed to whatever AI ends up
+reading this file next — including one running in a completely different
+product than the one that wrote it. It exists because the
+[[file:02-expansion-guide.org][External Session Workflow]] means the next
+reader is often *not* this agent: it states the teaching contract in
+miniature and the exact session-report format expected back, so the
+director/instructor handoff described there doesn't depend on the
+instructor already knowing this system's conventions.
+
+It also carries the actual pedagogy — this is what makes the file a
+self-contained "disk" that produces a real learning experience regardless
+of which AI loads it, not just a rulebook for good behavior:
+- *Orientation on load*, since a freshly-loaded AI has no memory of any
+  earlier session on this file and would otherwise have to guess at
+  progress.
+- *Socratic-first explanations* (ask what the human thinks before revealing
+  =*Why:*=) and *interleaved recall checks* after each step, instead of
+  saving all testing for the terminal Quiz — both are retrieval-practice
+  techniques, proven to beat passive reading / one-shot end tests for
+  retention.
+- *Spaced-repetition tracking* via the =#+LAST_REVIEWED:= header keyword
+  (see Template): a package whose checklist is fully checked but whose
+  =#+LAST_REVIEWED:= has gone stale gets flagged (by the validator, as a
+  warning) and is where the AI is instructed to run a refresher instead of
+  assuming a completed walkthrough needs nothing further.
+- *Skepticism of the file itself*, not just of the human's guesses — a
+  Socratic session that probes the human's answer while treating the
+  walkthrough's own Problem/=*Why:*=/citations as unquestionably correct
+  only catches half the possible errors. Confirmation steps exist to be
+  actually re-run against a real source, not narrated as already true.
+  Added after a real, external-session failure mode: an AI reading this
+  file in a separate chat followed it uncritically regardless of whether
+  its claims actually held up.
+- *Mandatory pre-session research*, via the same mechanism: the AI is
+  required to actually run every query in =* Search Prompts= itself before
+  starting — not treat that section as something only the human ever
+  touches. This is the skepticism pillar applied proactively, once, up
+  front, rather than only reactively when an individual step happens to
+  call for confirming something.
+
+Required for any package whose =#+WALKTHROUGH_GUIDE_VERSION:= is 2 or
+higher — =SCRIPTS/validate-walkthroughs.py= fails a v2+ package missing it,
+same as it fails one missing =* Notes=. A package still declaring v1 is not
+retroactively required to add it; the existing version-staleness warning
+already covers that case (see 00-conventions.org's Guide Version section).
+=#+LAST_REVIEWED:= itself is checked only as a warning (missing, malformed,
+or stale-with-a-fully-checked-checklist), never a hard failure — it's
+advisory, not a validity gate.
+
+** 1. Problem
+Concrete symptom, not a vague description: include the actual command
+and its actual output showing the issue, and one sentence on why it
+matters. If the root cause is already known, state it; if not, that's
+fine — the Guide section is where it gets diagnosed.
+
+** 2. Guide
+A =* TODO <title> [x/n]= checklist, one Org checkbox per concrete step.
+
+*CRITICAL RULE — every step must include a =*Why:*= line.* A step
+that shows a command but not the mechanism it addresses is incomplete
+— it's a log entry, not a walkthrough. The =*Why:*= is the entire
+point of this document existing.
+
+*CRITICAL RULE — mark who runs each step.* Tag each item
+=*[you-run]*= or =*[agent-run]*=. Default to =*[you-run]*= for the
+step that contains the actual lesson (the diagnostic command, the
+config edit, the fix itself); reserve =*[agent-run]*= for mechanical
+scaffolding the human gets nothing from doing by hand (e.g. installing
+a known dependency, or a pure verification step with no new mechanism
+to learn). When in doubt, prefer =*[you-run]*= — the bias this guide
+exists to create is toward the human doing more, not less.
+
+*CRITICAL RULE — every step gets an =:ID:= too*, generated the same
+way and placed the same way as described in
+[[file:00-conventions.org][00-conventions.org]]'s UUID Convention:
+#+begin_src org
+- [ ] <Step text> *[you-run]*
+  :PROPERTIES:
+  :ID:       <uuid>
+  :END:
+  #+begin_src sh
+  <command>
+  #+end_src
+  *Why:* <mechanism>
+#+end_src
+This gives every step the same stable, permanent handle a top-level
+issue gets in [[file:../index.org][index.org]]. It's what makes
+*Step-Level Expansion* (below) possible: a step can be pointed at,
+referenced, and later expanded into its own deep-dive file without
+ever renaming or restructuring the step itself.
+
+Record real, verified command output when a step is completed — never
+a guessed or hypothetical result. An unverified step stays unchecked.
+
+*CRITICAL RULE — a checked step needs a =*Result:*= block.* When a step
+gets marked =[X]=, add a =*Result:*= line (or block) directly under its
+=*Why:*=, containing the actual output — command output, request/response
+payload, whatever was actually produced — that proves the step happened.
+This is what makes "no step is marked done without its own real, verified
+output" (see =For AI Assistants= above) a rule the director enforces
+mechanically instead of one that depends on remembering to check.
+=SCRIPTS/validate-walkthroughs.py= fails any =[X]= step with no non-empty
+=*Result:*= block, for packages declaring guide v3+ (same non-retroactive
+policy as =For AI Assistants= above — a package still on v1/v2 only gets
+the version-staleness warning).
+
+*The validator's =*Result:*= check requires content on the same line as
+the marker* — this has caused the exact same false failure twice already
+in practice, so it's worth showing explicitly rather than just describing.
+Correct:
+#+begin_src org
+*Result:* Cloned the repo and inspected the git server:
+#+begin_src sh
+...
+#+end_src
+#+end_src
+Wrong — fails validation, because nothing follows the marker on its own
+line:
+#+begin_src org
+*Result:*
+#+begin_src sh
+...
+#+end_src
+#+end_src
+A one-line summary before the code block ("Cloned the repo and inspected
+X:") is both what the validator's same-line requirement demands and better
+writing anyway — it tells the reader what they're about to look at instead
+of making them parse the raw output cold.
+
+** 3. Notes
+- Open questions or steps that were deliberately skipped, and why.
+- Links to related walkthrough packages
+  (=[[file:../<uuid>/walkthrough.org][...]]=).
+- *Wiki update*: when this walkthrough's final step lands on a decision
+  that changes this project's current state (a language choice, a
+  credential model, a schema, anything a future reader would actually want
+  to know "what does this project do right now" about), that's the signal
+  to create or update the matching page in =.agents/wikis/=. See
+  [[file:05-wiki-guide.org][05-wiki-guide.org]] for the full mechanism —
+  don't restate it here. This replaced an earlier, narrower rule tied to a
+  concept recurring across multiple walkthroughs; that rule doesn't apply
+  to this project's wiki (see 05-wiki-guide.org's Purpose section for why),
+  but is left as-is in any already-archived walkthrough that used the old
+  phrasing, since archived walkthroughs are never rewritten.
+
+** 4. Search Prompts
+
+Before AI assistants, this is how the knowledge actually got built: you
+hit an error, you typed something into Google or Stack Overflow, and
+the *act of searching and reading through results* — not just the
+final answer — is what built up a working mental model over years of
+doing it. Handing over a finished fix skips that entirely. This
+section hands it back: a short list of search-engine-ready queries the
+human can run themselves to keep studying the topic past what this
+walkthrough already covered.
+
+*CRITICAL RULE — write real, typeable queries, not topic labels.* Not
+=bash prompt colors= (a keyword) but =bash PS1 ansi escape codes
+explained= (a query a person would actually type and get a useful
+result from). Vague keywords return noise; a real query returns the
+specific Stack Overflow threads and docs an engineer would have found.
+
+Include a mix:
+- One or two queries tied directly to *this* fix (would surface the
+  exact Stack Overflow thread or doc this walkthrough is effectively
+  a condensed version of).
+- One or two queries aimed at the *general concept* underneath the fix
+  (the same generalization the step's Mental Model, if expanded, would
+  cover) — so the search habit trains toward transferable
+  understanding, not just this one symptom.
+
+These queries aren't only for the human — see =For AI Assistants='s
+=Mandatory pre-session research= pillar above (and the Template's matching
+bullet): whatever AI loads this file is required to run every one of these
+itself before starting, as its own independent grounding.
+
+** 5. Quiz
+
+A =* Quiz= heading with exactly five open-ended questions plus a
+=** Answer Key= subsection with exactly five answers — see
+[[file:03-quiz-guide.org][03-quiz-guide.org]] for the full rules on
+writing these questions well, *when* to write them, and actually
+running/grading the quiz session. Don't restate its content here; that
+guide is the single source of truth for this section, the same way
+[[file:00-conventions.org][00-conventions.org]] is for UUIDs and guide
+versioning. Notably: this section does *not* get written during the
+Authoring Workflow above — see 03-quiz-guide.org's CRITICAL RULE on timing.
+
+* Step-Level Expansion
+
+The =*Why:*= line is deliberately short — a sentence or two, enough to
+name the mechanism without turning every step into an essay. Some
+steps deserve more than that: real background theory, the mental
+model that generalizes to the next unrelated problem, alternatives
+that were considered and rejected, or the misconception that trips
+people up. That depth doesn't belong inline — it would bury the
+checklist. It belongs in its own file, written *only when asked for*.
+
+** Workflow
+
+1. The human (or the agent, if it judges a step is dense enough to
+   warrant it and offers this rather than doing it silently) points at
+   a step's =:ID:=.
+2. Create =.agents/walkthroughs/<package-uuid>/<step-uuid>.org= — a
+   sibling of =walkthrough.org=, inside the same package directory,
+   named after the step's own UUID.
+3. Write it following the *Step Detail Template* below — this is where
+   the deep *why* lives, not a longer command log.
+4. Add a line under the step in =walkthrough.org= pointing at it:
+   =*Detail:* [[file:<step-uuid>.org][<Step Title>]]=.
+
+A step's =:ID:= existing does *not* imply a detail file exists —
+exactly like an open issue in the index having no walkthrough yet.
+Most steps should stay at just a =*Why:*= line forever; expansion is
+for the few that are genuinely worth a standalone explanation.
+
+** Step Detail Template
+
+#+BEGIN_SRC org
+#+TITLE: <Step Title> — Detail
+#+DATE: <ISO date>
+
+Parent: [[file:walkthrough.org][<Walkthrough Title>]], step "<Step Title>".
+
+* Why This Works
+
+<The actual mechanism, in full — not the one-sentence version. Explain
+it the way you'd explain it to someone who needs to be able to reason
+about the next, differently-shaped instance of this problem, not just
+repeat this fix.>
+
+* Mental Model
+
+<The transferable principle underneath this step — what to generalize
+away from the specific commands, so the human recognizes this class of
+problem next time it shows up somewhere else entirely.>
+
+* Alternatives Considered
+
+<Other ways this step could have been done, and why this one won —
+trade-offs, not just "this also works.">
+
+* Common Pitfalls
+
+<What a beginner gets subtly wrong here, or what looks like it worked
+but didn't.>
+
+* Further Reading
+
+<Optional: man pages, specs, or a wiki page — link out rather than
+duplicating reference material that already exists elsewhere.>
+#+END_SRC
+
+* The Teaching Contract
+
+These are behavior rules for the agent, not just document formatting:
+
+1. Before executing a non-trivial diagnostic or fix step, offer it to
+   the human to run themselves rather than running it silently. Only
+   run it directly when they ask you to, or it's tagged
+   =*[agent-run]*=.
+2. Never omit the =*Why:*= to save time. If you don't know the why,
+   that's worth saying explicitly rather than skipping it.
+3. If a problem matches something already in the wiki or a prior
+   walkthrough, link to it instead of re-deriving it — but still write
+   the =*Why:*= for *this* instance, since the specific trigger
+   usually differs.
+4. When a walkthrough's checklist is fully resolved, do one pass over
+   its Notes to check whether anything qualifies for
+   concept-promotion.
+5. Don't write a step detail file unprompted — only create one when the
+   human asks for that step's UUID to be expanded, or when you flag
+   that a step looks dense enough to deserve one and the human agrees.
+   Depth is opt-in per step, the same way a whole issue is opt-in for
+   expansion in the first place.
+6. Never skip Search Prompts, and never fill it with lazy keyword
+   phrases — write the queries a person would actually type, the way
+   they'd have had to before an agent could just do the searching
+   (and the thinking) for them.
+7. Never skip Quiz, and never write a question answerable without
+   understanding (yes/no, or a question whose answer is just the
+   =*Why:*= line copied verbatim).
+
+* External Session Workflow
+
+Working a walkthrough's =[you-run]= steps doesn't have to happen inside this
+agent's own session. A human may prefer to drag =walkthrough.org= into a
+separate AI chat (any provider — a different Claude session, Gemini,
+ChatGPT) and work through it there instead: typing the commands themselves,
+asking follow-up questions freely, going down side-paths the walkthrough
+didn't anticipate. This is still squarely within this guide's
+[[file:02-expansion-guide.org][Purpose]] — the human is still the one doing
+the work and forming the understanding; the external AI is a conversational
+partner in that process, not a delegate finishing the task for them. What
+matters is who is driving, not which chat window is open.
+
+** Workflow
+
+1. *Work the steps externally.* Drag or paste =walkthrough.org= (or the
+   relevant step(s)) into the external session and follow its own
+   =*[you-run]*=/=*[agent-run]*= tags and =*Why:*= lines as the script for
+   that conversation.
+2. *Close out the external session deliberately*, by asking it for two
+   things:
+   - A closed-question self-check quiz (multiple-choice / true-false /
+     short factual recall) — supplementary practice, a different *kind* of
+     check than the walkthrough's own quiz, never a replacement for it (see
+     CRITICAL RULE below).
+   - A session-export summary: what was covered, key learnings, and what's
+     still outstanding.
+3. *Save the raw export in whatever format the tool actually produced,
+   renamed to fit the convention.* Most external AI products cannot emit
+   =.org= — Gemini, for instance, exports Markdown. That's fine; don't
+   fight the tool, and don't convert it either (see CRITICAL RULE below).
+   Save it as =NN-<tool>-SESH.<ext>= — a zero-padded sequence number (so
+   multiple external sessions over time stay ordered), the external tool's
+   name, the =SESH= suffix, and its own native extension. Example:
+   =01-GEMINI-SESH.md=.
+4. *Reconcile the checklist back in the primary session*, per the CRITICAL
+   RULEs below.
+
+** CRITICAL RULE — session-export files stay in their native format, never converted
+
+A =NN-<tool>-SESH.<ext>= file is a raw evidence artifact, not a package file
+that has to match every other file's =.org= format — nothing in this system
+validates its internal structure, only that it exists, is named correctly,
+and is linked from Notes (see below). Converting Markdown (or whatever the
+tool produced) to Org costs real tokens for no benefit: the pedagogically
+relevant content gets pulled out and reconciled into =walkthrough.org='s own
+=*Result:*= blocks anyway (per the next CRITICAL RULE), and *that* stays
+=.org= because it lives in a real package file. The SESH file itself never
+does.
+=SCRIPTS/validate-walkthroughs.py= accepts any extension on a
+=NN-<tool>-SESH.<ext>= file — it only fails one that's misnamed entirely or
+missing its required Notes link.
+
+** CRITICAL RULE — external session output is a claim, not a record
+
+A session-export file's prose (or a paraphrased "step done" claim) must
+never by itself check a checklist box, fill in a =*Result:*=, or answer the
+walkthrough's own Quiz. Reconciling a step still requires the same real,
+verified output this guide already requires elsewhere — the raw command
+output, the actual request/response payload, etc. — pasted into the step
+itself. If that real output isn't available, the step stays unchecked, same
+as any other unverified step. The export file is useful as a pointer to
+*what to go re-verify*, not as evidence on its own.
+
+*"Verified" means the reconciler independently re-checked the claim against
+a live, current, authoritative source — not that the export file merely
+contains something that looks like real evidence.* A quote in a SESH file
+can be genuinely real and still be wrong, incomplete, or stale by
+reconciliation time; skimming it and pasting it into =*Result:*= verbatim
+without re-fetching the source it claims to come from is not
+reconciliation, it's transcription. This is not hypothetical: real
+reconciliation sessions have caught a SESH file's claim being accurate but
+incomplete (a source listing four real options while the export only named
+two), and citations that didn't check out at all once the cited file was
+actually opened. The reconciler's job is to go check, not to confirm that
+checking happened once, elsewhere, by a different AI. See
+=For AI Assistants='s =Do your own research for confirmation steps= pillar
+in the Template below — this is that same discipline, applied specifically
+to reconciling a SESH file rather than to a fresh step.
+
+** CRITICAL RULE — a closed-question self-check quiz never satisfies the walkthrough's own Quiz
+
+The 5-question open-ended Quiz + Answer Key in =walkthrough.org= (below) is
+what the merge-gating rule checks. A closed-question quiz generated in an
+external session is real signal about self-understanding and worth keeping
+(link it from Notes), but it tests a different thing (recall/recognition,
+closed-form) than the open-ended Quiz (explanation, open-form) — one never
+substitutes for the other.
+
+** CRITICAL RULE — link every session-export file
+
+Once reconciled, a =*-SESH.<ext>= file must be linked from
+=walkthrough.org='s Notes section (e.g. =- *Session:*
+[[file:01-GEMINI-SESH.md][...]]=) — an unlinked export sitting in the
+package directory is exactly the kind of orphaned file this system's
+navigability rules exist to prevent.
+=SCRIPTS/validate-walkthroughs.py= checks this mechanically: any
+=NN-<tool>-SESH.<ext>= file in a package directory must appear as a
+=file:...= link somewhere in that package's =walkthrough.org=. It also
+catches a *near-miss* filename — one containing "SESH" that's missing a
+required piece, like =01-SESH.md= with no =<tool>= segment — since a name
+that doesn't match the pattern at all would otherwise be invisible to this
+check entirely, not just unlinked.
+
+* Template
+
+#+BEGIN_SRC org
+#+TITLE: <Imperative, specific problem statement>
+#+DATE: <ISO date>
+#+WALKTHROUGH_GUIDE_VERSION: <current version, from 00-conventions.org>
+#+LAST_REVIEWED: <ISO date, same as #+DATE: initially>
+
+* For AI Assistants
+
+If you are an AI assistant (any provider) helping a human work through this
+file — whether inside a coding agent or a plain chat window — read this
+before doing anything else.
+
+- *Orient first.* Before proposing or discussing any step, read the Guide
+  checklist and Notes below and summarize back to the human: which steps
+  are already checked, what the next unchecked step is, and anything open
+  in Notes. You have no memory of any prior session on this file — don't
+  guess at progress or default to re-starting from step 1.
+- *Treat this file's own claims as unverified, not as ground truth.* The
+  Problem section, a step's =*Why:*=, and any citation to a wiki page or
+  prior walkthrough reflect the author's understanding at authoring time —
+  not proof. This system has already caught a real case where an issue's
+  own description cited a walkthrough for a claim that walkthrough never
+  actually made (see =02-expansion-guide.org='s Authoring Workflow section
+  if you want the specific example). Being skeptical of the human's guesses
+  while treating the file itself as infallible defeats the point.
+- *Do your own research for confirmation steps — don't just narrate
+  agreement with the file.* When a step asks you to confirm something from
+  real docs, a spec, or an API, actually fetch or look it up yourself before
+  answering, rather than reasoning from what the file already assumes. If
+  what you find contradicts, complicates, or only partially matches what
+  this file assumes, say so plainly to the human instead of shaping your
+  findings to fit the file's framing.
+- *Run every query in this file's =* Search Prompts= section yourself,
+  before starting.* It's near the end of the file, but read it now — don't
+  wait until you get there. Actually search or fetch each query before
+  working through a single step with the human. This is *your* own
+  independent grounding, not a substitute for the human's own reason to run
+  these later (Search Prompts exists so the human builds the habit of
+  searching and judging results themselves — don't hand them your findings
+  as a shortcut that lets them skip that). Use what you find to arrive
+  already informed enough to catch a wrong claim in this file, the same way
+  the two rules above ask of you for individual steps — just done once, up
+  front, instead of only when a step happens to ask for it.
+- This file is being used to teach, not to get a task finished quickly. Do
+  not run or solve a =*[you-run]*= step yourself and report the result —
+  offer it to the human and let them run it. Only execute a step directly
+  if it's tagged =*[agent-run]*=, or the human explicitly asks you to.
+- *Ask before you tell.* Before revealing a step's =*Why:*=, ask the human
+  what they think the mechanism is and let them attempt an answer first —
+  use the =*Why:*= line as your answer key to check their guess against,
+  not as a script to recite outright. Don't skip this to save time.
+- *Check before moving on.* After a step is discussed and about to be
+  checked off, ask the human one short recall question about what that
+  step actually demonstrated, in their own words, before moving to the
+  next step. One big test at the end (the Quiz) is worse for retention
+  than checking understanding along the way — don't let it be the only
+  check.
+- Follow-up questions, tangents, and exploring adjacent behavior are
+  encouraged — that's how understanding generalizes past this one file. You
+  are not required to stay rigidly on-script.
+- *If this looks like a review, not a first pass* — most/all steps already
+  checked, and =#+LAST_REVIEWED:= is more than a few weeks old — treat it
+  as one: before doing anything new, run the human through a short
+  refresher (a handful of closed-question recall checks on
+  already-completed steps), then update =#+LAST_REVIEWED:= to today's date
+  once done.
+- When the session is ending, produce a session-export summary (the human
+  will save it alongside this file). For every step actually worked,
+  include:
+  - the step's own =:ID:= (from its =:PROPERTIES:= drawer), so it's
+    unambiguous which checklist item it maps to;
+  - the *verbatim* raw output — actual command output, actual
+    request/response payloads — never a paraphrase or a guess at what it
+    would show;
+  - anywhere the human hesitated, guessed, or got something wrong before
+    getting it right — that's real signal for what still needs
+    reinforcing, and smoothing it into a clean summary hides it.
+- If asked to produce a self-check quiz, make it closed-question
+  (multiple-choice / true-false / short recall). That quiz is supplementary
+  practice only — it does not replace or satisfy this file's own =* Quiz=
+  section below, which stays open-ended by design.
+- Nothing in your summary checks a box or answers a quiz on its own. A
+  human (or another agent) still reconciles it afterward against this rule:
+  no step is marked done without its own real, verified output.
+
+* Problem
+
+<Concrete symptom, with command + actual output, and why it matters>
+
+* TODO <Same imperative title> [0/n]
+
+- [ ] <Step 1> *[you-run]*
+  :PROPERTIES:
+  :ID:       xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  :END:
+  #+begin_src sh
+  <command>
+  #+end_src
+  *Why:* <the mechanism this step addresses>
+
+- [ ] <Step 2> *[agent-run]*
+  :PROPERTIES:
+  :ID:       yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
+  :END:
+  #+begin_src sh
+  <command>
+  #+end_src
+  *Why:* <the mechanism this step addresses>
+  *Detail:* [[file:yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy.org][Step 2]]
+
+* Notes
+
+- <Open question, skipped step + reason, or related walkthrough link>
+- <Wiki update, if this walkthrough's decision changes the project's
+  current state — see 05-wiki-guide.org>
+
+* Search Prompts
+
+- <Query that would surface the specific fix, e.g. the exact Stack
+  Overflow thread this problem matches>
+- <Query aimed at the general concept underneath the fix, for
+  transferable study>
+#+END_SRC
+
+Do *not* add a =* Quiz= section to the file yet — a freshly-expanded
+package ends here, at Search Prompts, per
+[[file:03-quiz-guide.org][03-quiz-guide.org]]'s CRITICAL RULE. Once every
+step in the Guide above has a real =*Result:*= block, append:
+
+#+BEGIN_SRC org
+* Quiz
+
+1. <Open-ended question testing the why behind one step>
+2. <Open-ended question, ideally posed against a slightly different
+   scenario than the one actually solved here>
+3. <...>
+4. <...>
+5. <...>
+
+** Answer Key
+
+1. <Grading guidance — what a correct answer must include, not
+   necessarily verbatim wording>
+2. <...>
+3. <...>
+4. <...>
+5. <...>
+#+END_SRC
+
+* Best Practices
+
+1. One walkthrough per distinct problem — don't bundle unrelated
+   fixes into a single package just because they happened in the same
+   session.
+2. Weight steps toward =*[you-run]*=. If every step ends up
+   =*[agent-run]*=, this probably should not have been a walkthrough
+   — it's the agent doing the task and writing it up, which is exactly
+   the pattern this guide exists to avoid.
+3. Paste real, verified output — never a guess at what a command would
+   print.
+4. Keep supporting files (scripts, logs, diffs) inside the package
+   directory rather than inline, once they're more than a few lines.
+5. When a walkthrough's decision changes the project's current state,
+   update the matching =.agents/wikis/= page in the same pass — don't
+   leave it for later. See [[file:05-wiki-guide.org][05-wiki-guide.org]].
+6. Every step gets an =:ID:=, but few steps get a detail file — an
+   ID with no detail file is the normal, expected state, not an
+   incomplete one.
+7. Search Prompts is not a bibliography — don't just paste a link you
+   already have. Write it as a query, so the human is the one who runs
+   the search, reads several results, and forms their own judgment
+   about which one actually answers it. The AI reading this file runs
+   the same queries too, but for its own pre-session grounding — see
+   =For AI Assistants='s =Mandatory pre-session research= pillar — not
+   as a substitute for the human doing it.
+8. Writing and running the Quiz has its own full best-practices list in
+   [[file:03-quiz-guide.org][03-quiz-guide.org]] — don't restate it here.
+9. *External sessions count as the human doing the work* — working
+   =[you-run]= steps in a separate AI chat and bringing back a
+   =*-SESH.<ext>= export (see External Session Workflow above) is a valid way
+   to work a walkthrough. What doesn't count is skipping reconciliation:
+   the export's claims must become real, verified output pasted into the
+   step before anything gets checked off, and the file must be linked from
+   Notes.
+10. *Run the validator* before considering a package done —
+    =SCRIPTS/validate-walkthroughs.py= checks the required sections all
+    exist, every step has a valid unique =:ID:=, the Quiz has exactly 5
+    questions and the Answer Key exactly 5 answers, and the guide
+    version matches current. Treat every CRITICAL RULE above as
+    something this script can and does check, not just prose to
+    remember.
+11. *Don't strip the pedagogy out of =For AI Assistants= to shorten a
+    package.* Orientation-on-load, Socratic-first explanations,
+    interleaved recall checks, skepticism of the file's own claims, and
+    =#+LAST_REVIEWED:= tracking are the actual mechanism that makes this a
+    learning artifact instead of a fix log an AI happens to read aloud.
+    Trimming that section down to "don't do steps for the human" keeps the
+    letter of the Teaching Contract but loses most of what makes it work.

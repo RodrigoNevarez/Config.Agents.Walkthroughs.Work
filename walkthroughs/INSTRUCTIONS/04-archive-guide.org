@@ -1,0 +1,133 @@
+#+TITLE: Walkthrough Archive Guide
+#+DATE: 2026-08-21
+
+Single source of truth for archiving a fully-settled walkthrough package —
+consolidating it from a working directory into a single flat file once
+there's nothing left to actively reconcile. Referenced by
+[[file:02-expansion-guide.org][02-expansion-guide.org]] instead of
+restating it, same principle as
+[[file:00-conventions.org][00-conventions.org]].
+
+* Purpose
+
+A walkthrough package starts as a working directory — =walkthrough.org=
+plus whatever session exports and detail files accumulate while it's
+actively being reconciled. Once it's genuinely done, that scaffolding has
+served its purpose: keeping it around forever just makes the active
+working set (the top level of =.agents/walkthroughs/=) harder to scan as
+completed packages pile up. Archiving flattens a settled package into one
+file, moved out of the way, without losing anything that still matters.
+
+Archiving is a storage-shape change, not a statement that the topic is
+closed to further learning. =#+LAST_REVIEWED:= staleness tracking and the
+=For AI Assistants= briefing keep working exactly the same on an archived
+file — it can still be dragged into a future refresher session like any
+other walkthrough.
+
+* When to Archive
+
+- The =index.org= node is already =DONE= (expanded, per
+  [[file:02-expansion-guide.org][02-expansion-guide.org]]'s Expansion
+  Workflow).
+- The walkthrough's own Guide checklist is fully checked (=[n/n]=). A
+  package still being actively worked through belongs in its full
+  directory form — supporting files may still be needed for ongoing
+  reconciliation, and archiving mid-work would delete evidence that
+  hasn't been folded into a =*Result:*= block yet.
+
+* Archive Workflow
+
+1. Confirm eligibility (above).
+
+2. *CRITICAL RULE — reconcile before you delete.* Any session-export
+   (=*-SESH.<ext>=) file's pedagogically relevant content — hesitations,
+   wrong first guesses, raw output not already captured in a step's own
+   =*Result:*= block — must already be reflected in the walkthrough's own
+   checklist before that SESH file is deleted. The archived file is going
+   to be the *only* surviving record of this package; if evidence exists
+   solely in a SESH file, deleting it is data loss, not cleanup.
+
+3. *CRITICAL RULE — step-detail files are not disposable the way SESH
+   files are.* A =<step-uuid>.org= detail file (see Step-Level Expansion
+   in [[file:02-expansion-guide.org][02-expansion-guide.org]]) holds
+   content that was deliberately *never* duplicated inline — unlike a SESH
+   export, there's no reconciled copy elsewhere to fall back on. Before
+   archiving a package that has one: either inline its content into the
+   corresponding step (as a =*Detail (archived inline):*= block) or
+   promote it to the wiki and link out, per the Notes concept-promotion
+   flag. Never silently delete a step-detail file.
+
+4. *CRITICAL RULE — remove every link that points at a file you're about
+   to delete.* Reconciling a SESH file's *content* (rule 2, above) is not
+   the same check as finding every =[[file:<name>-SESH.<ext>...]]= reference
+   to it — the External Session Workflow's own linking rule means a
+   walkthrough that properly followed it *will* contain such links (the
+   Notes =*Session:*= line, and possibly inline "full session" pointers
+   from individual steps). Grep for the SESH filename before deleting it,
+   and rewrite every hit as plain text (e.g. "worked in an external Gemini
+   session, export pruned on archiving") rather than leaving a link into
+   nothing. A dangling link in the archived file is worse than one in an
+   active package directory — there's no longer a directory listing next
+   to it that would make the breakage obvious.
+   #+begin_src sh
+   grep -rn "01-GEMINI-SESH" .agents/walkthroughs/<uuid>/walkthrough.org
+   #+end_src
+
+5. Move and flatten:
+   #+begin_src sh
+   mkdir -p .agents/walkthroughs/archive
+   mv .agents/walkthroughs/<uuid>/walkthrough.org \
+      .agents/walkthroughs/archive/<uuid>.org
+   #+end_src
+
+6. Delete the now-superseded supporting files and the now-empty package
+   directory:
+   #+begin_src sh
+   rm .agents/walkthroughs/<uuid>/*-SESH.*
+   rmdir .agents/walkthroughs/<uuid>
+   #+end_src
+   (=rmdir=, not =rm -rf= — it only succeeds if the directory is actually
+   empty, which doubles as confirmation nothing was missed in steps 2-4.)
+
+7. Update the =index.org= link for this node from
+   =file:<uuid>/walkthrough.org= to =file:archive/<uuid>.org= — the =DONE=
+   state itself doesn't change, only the link target.
+
+8. Run the validator.
+
+* What the Validator Checks
+
+- An archived file's name (=<uuid>.org=) must be a valid UUID matching
+  some =index.org= node's own =:ID:=, and that node must be =DONE= — same
+  requirement as an active package directory, just checked against
+  =archive/<uuid>.org= instead of =<uuid>/walkthrough.org=.
+- A UUID must resolve to exactly *one* location — either the active
+  =<uuid>/= directory or =archive/<uuid>.org=, never both. A leftover
+  directory after archiving is a hard failure (archiving is a move, not a
+  copy), not a warning.
+- Everything else — required sections, step =:ID:=s, =*Result:*= blocks,
+  Quiz question/answer counts, guide-version gating — is checked
+  identically to an unarchived =walkthrough.org=. Archiving changes where
+  the file lives and what it's named, not what's required inside it.
+- There is no supporting-files check for an archived package (no
+  =NN-<tool>-SESH.<ext>= linking rule to enforce) — by design, nothing but
+  the single =.org= file survives archiving.
+- An archived file must contain *no* =[[file:...-SESH.<ext>...]]= link at
+  all — since a SESH file can never legitimately exist next to an archived
+  =.org= file, any such link is guaranteed dangling. This is the
+  mechanical version of CRITICAL RULE 4 above; it exists because that rule
+  was originally missed while writing this guide and only caught by
+  actually running the archive workflow once.
+
+* Best Practices
+
+1. Archive only fully-checked walkthroughs — see When to Archive above.
+2. Reconcile fully before deleting anything — the two CRITICAL RULEs in
+   the Archive Workflow exist because deletion here is not easily
+   reversible; get it right before running =rm=.
+3. Don't strip the =For AI Assistants= section, =#+LAST_REVIEWED:=, or any
+   other pedagogy on archive — same rule as
+   [[file:02-expansion-guide.org][02-expansion-guide.org]]'s Best
+   Practices already state for an active package.
+4. Run the validator after archiving, same as any other change to this
+   system.

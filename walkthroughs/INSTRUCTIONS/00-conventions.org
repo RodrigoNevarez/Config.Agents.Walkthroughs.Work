@@ -1,0 +1,250 @@
+#+TITLE: Walkthrough Shared Conventions
+#+WALKTHROUGH_GUIDE_VERSION: 12
+
+Single source of truth for conventions shared by
+[[file:01-index-guide.org][01-index-guide.org]] (the index),
+[[file:02-expansion-guide.org][02-expansion-guide.org]] (walkthrough
+packages), [[file:03-quiz-guide.org][03-quiz-guide.org]] (writing and
+running a walkthrough's Quiz), [[file:04-archive-guide.org][04-archive-guide.org]]
+(archiving a settled package), [[file:05-wiki-guide.org][05-wiki-guide.org]]
+(the project wiki at =.agents/wikis/=), and
+[[file:06-flashcards-guide.org][06-flashcards-guide.org]] (the
+spaced-repetition study feature at =.agents/flashcards/=, mined from
+=archive/=). All six reference this file instead of
+restating it — a rule here changes in exactly one place, not several that can
+drift apart. Checked mechanically by =SCRIPTS/validate-walkthroughs.py=
+(walkthroughs, index, and wiki) and
+=.agents/flashcards/SCRIPTS/validate-flashcards.py= (flashcards) — run
+separately, not merged into one script.
+
+* UUID Convention
+
+Every linkable node in this system — an index issue, a walkthrough
+step — gets a permanent =:ID:= via a =:PROPERTIES:= drawer:
+
+#+begin_src org
+:PROPERTIES:
+:ID:       <uuid>
+:END:
+#+end_src
+
+- *CRITICAL RULE — generate, never invent.* Produce the UUID with a
+  real generator: =uuidgen=, or =python3 -c 'import uuid;
+  print(uuid.uuid4())'= if that's unavailable. Never hand-type a
+  UUID-shaped string. An LLM-typed "plausible" UUID isn't actually
+  random and risks colliding with one already in use.
+- *CRITICAL RULE — never in visible text.* The UUID lives strictly
+  inside the drawer — never in a heading, never in a checklist item's
+  own text. Headings and step descriptions stay clean and
+  human-readable.
+- *CRITICAL RULE — one namespace.* Every UUID under
+  =.agents/walkthroughs/=, =.agents/wikis/=, *or* =.agents/flashcards/= —
+  index nodes, package directory names, individual walkthrough steps, wiki
+  pages (see [[file:05-wiki-guide.org][05-wiki-guide.org]]'s UUID
+  Placement), and flashcard decks and cards (see
+  [[file:06-flashcards-guide.org][06-flashcards-guide.org]]'s UUID
+  Placement) — must be globally unique across all three trees, not just
+  within one file. Run =SCRIPTS/validate-walkthroughs.py= and
+  =.agents/flashcards/SCRIPTS/validate-flashcards.py= together to check;
+  neither will catch a collision by reading alone, only by comparing across
+  both.
+
+* Issue-Tracker Mental Model
+
+Every Level 3 node in [[file:../index.org][index.org]] is an *issue*:
+title (heading), body (short description), state (=TODO=/=DONE= via
+Org's native keyword — open vs. closed), optional tags (Org's
+=:tag:= syntax, standing in for labels), and id (the =:ID:= UUID
+above, standing in for an issue number). Closing an issue means
+expanding it into a walkthrough package — see
+[[file:02-expansion-guide.org][02-expansion-guide.org]]. There's no
+"resolved but undocumented" state: closed implies the write-up exists.
+
+* Guide Version
+
+=#+WALKTHROUGH_GUIDE_VERSION:= at the top of this file is the current
+version of the required =walkthrough.org= structure. Every
+=walkthrough.org= must carry a matching
+=#+WALKTHROUGH_GUIDE_VERSION:= line directly under its =#+DATE:=.
+
+*This version number gates =walkthrough.org='s own required structure
+only.* =.agents/wikis/= (see [[file:05-wiki-guide.org][05-wiki-guide.org]])
+is a separate system with its own validator checks, enforced
+unconditionally rather than version-gated — a wiki page doesn't declare a
+=#+WALKTHROUGH_GUIDE_VERSION:= line and isn't subject to this section's
+staleness warning. Introducing =05-wiki-guide.org= itself did not bump this
+version, for that reason. The same is true of the flashcards feature (see
+[[file:06-flashcards-guide.org][06-flashcards-guide.org]]) — its own
+=validate-flashcards.py= enforces its rules unconditionally, a deck or card
+file carries no =#+WALKTHROUGH_GUIDE_VERSION:= line, and introducing that
+guide did not bump this version either.
+
+Bump the number here whenever the required structure actually changes
+— a section added, removed, or renamed, or a new CRITICAL RULE that
+changes what "valid" means. Existing walkthrough packages are *not*
+required to be retrofitted immediately when the version bumps — that
+would make every structural change a repo-wide scramble. Instead, a
+walkthrough's version number falling behind current is exactly the
+signal that it may now be missing something the guide requires;
+=SCRIPTS/validate-walkthroughs.py= reports this as a warning, not a
+failure, so staleness stays visible instead of silent.
+
+** Changelog
+
+- *v12* (2026-08-23): Strengthened the External Session Workflow's
+  [[file:02-expansion-guide.org][CRITICAL RULE — external session output is
+  a claim, not a record]] in =02-expansion-guide.org=: "verified" now
+  explicitly means the reconciler independently re-checked the claim
+  against a live, current, authoritative source — not merely that the SESH
+  file contained something that looked like real evidence. The prior
+  wording required real output to *exist and be pasted in*, but never
+  explicitly required the reconciler to go re-fetch and confirm it. Found
+  by noticing the gap directly: several reconciliation sessions this same
+  day had already been doing this (re-fetching sources, catching a SESH
+  claim that was accurate but incomplete, catching citations that didn't
+  hold up), but nothing in the instructions actually required it — the
+  practice was ahead of what was written down. Prose-only, like v10/v11 —
+  not separately mechanically validated (there's no way to check whether a
+  re-fetch actually happened from the file alone).
+- *v11* (2026-08-23): New =For AI Assistants= pillar in
+  [[file:02-expansion-guide.org][02-expansion-guide.org]] (descriptive text
+  and Template boilerplate both): whatever AI loads this file is now
+  required to actually run every query in =* Search Prompts= itself,
+  before starting — its own independent pre-session grounding, not a
+  substitute for the human's own reason to run those queries later.
+  Requested directly: the v10 skepticism rule addressed an AI trusting the
+  file's claims uncritically during individual confirmation steps; this
+  extends the same discipline proactively, up front, using content that
+  already existed in every package (Search Prompts) rather than requiring
+  new research infrastructure. Prose-only, same as v10 — not separately
+  mechanically validated (the validator has no way to check whether a
+  search actually happened), consistent with how the rest of =For AI
+  Assistants='s pedagogy is handled.
+- *v10* (2026-08-23): New pedagogical pillar in
+  [[file:02-expansion-guide.org][02-expansion-guide.org]]'s =For AI
+  Assistants= section (both the descriptive text and the Template's actual
+  boilerplate): explicit skepticism of the walkthrough file's own claims,
+  not just of the human's guesses, plus a direct instruction to do real,
+  independent research for confirmation steps rather than narrating
+  agreement with what the file already assumes. Raised directly in
+  conversation: an external AI session (Gemini) worked through a
+  walkthrough file "with disregard of whether the file is correct or not"
+  — it treated the Problem section and =*Why:*= lines as ground truth
+  instead of things to independently verify, the same failure mode that
+  produced the =44c128d0= citation error v9 already fixed at the authoring
+  side. This closes the matching gap on the *reading* side: any AI loading
+  this file, including one running in a different product entirely, is now
+  told explicitly not to trust the file uncritically. Prose-only, like the
+  rest of =For AI Assistants='s pedagogy content (v4) — not separately
+  mechanically validated beyond the section's existing presence check,
+  consistent with how that content has always been handled.
+- *v9* (2026-08-23): New CRITICAL RULE in
+  [[file:03-quiz-guide.org][03-quiz-guide.org]]: a walkthrough's Quiz must
+  not be authored until its Guide checklist is fully checked (every step
+  has a real =*Result:*= block) — never at expansion time. Previously the
+  Quiz was written alongside the Problem and Guide sections, before any
+  step was worked; since the author (frequently an AI that had already done
+  the grounding research) already knew roughly where the steps would land,
+  the questions and Answer Key risked quietly encoding a predetermined
+  decision, turning the live Quiz into reconstructing a predicted answer
+  instead of genuine retrieval practice. =SCRIPTS/validate-walkthroughs.py=
+  now enforces this bidirectionally for a package declaring v9+: a
+  =* Quiz= section is a hard failure if present while the checklist isn't
+  fully checked, and remains required (exactly 5 questions, exactly 5
+  answers, unchanged) once it is. Also adds a new required
+  [[file:02-expansion-guide.org][Authoring Workflow]] section to
+  =02-expansion-guide.org=, documenting the actual research-and-writing
+  process for a fresh walkthrough as an explicit source of truth — asked
+  for directly, after this same gap was raised in conversation — including
+  a CRITICAL RULE that a citation to an earlier walkthrough or wiki page
+  must be independently re-verified before being reused (found by
+  discovering =index.org='s own description for issue =44c128d0= had
+  mis-cited the architecture walkthrough for a claim it never actually
+  made). Both new rules are version-gated, not unconditional — existing
+  packages keep the ordinary version-staleness warning rather than being
+  retroactively failed.
+- *v8* (2026-08-22): =SCRIPTS/validate-walkthroughs.py= now checks that
+  every =[[file:...]]= link in every active walkthrough, archived
+  walkthrough, =index.org=, and wiki page actually resolves to a real
+  file — not just the specific SESH- and Justified-By-shaped links checked
+  before. Found by making the identical relative-path mistake twice in the
+  same session: a wiki cross-link written from inside an active package
+  directory (=.agents/walkthroughs/<uuid>/=, two levels below =.agents/=)
+  used =../wikis/...= (one level) instead of =../../wikis/...= (two
+  levels) — a link that reads as plausible and was never independently
+  re-verified by opening it. Unconditional, like the other link-integrity
+  checks — regardless of which guide version a package declares.
+- *v7* (2026-08-22): =SCRIPTS/validate-walkthroughs.py= now catches a
+  session-export file whose name is *close* to =NN-<tool>-SESH.<ext>= but
+  missing a required piece (e.g. =01-SESH.md=, missing the =<tool>=
+  segment) — previously such a file matched neither the naming check nor
+  the must-be-linked check, so it sat in a package directory completely
+  invisible to the validator. Found by actually hitting this exact case: a
+  session export came back named =01-SESH.md= instead of
+  =01-GEMINI-SESH.md=, and the validator raised nothing. Any filename
+  containing "sesh" (case-insensitive) that doesn't match the strict
+  pattern now fails explicitly. Unconditional, like the other SESH-related
+  checks — regardless of which guide version a package declares.
+- *v6* (2026-08-22): Reverses v5, below. A session-export file now stays in
+  whatever format the external tool actually produced — renamed to
+  =NN-<tool>-SESH.<ext>= (e.g. =01-GEMINI-SESH.md=) but never converted to
+  =.org=. Converting was pure token spend with no matching benefit: the SESH
+  file is a raw evidence artifact that gets reconciled *into*
+  =walkthrough.org='s own =*Result:*= blocks — which do stay =.org=, since
+  those live in a real package file — never validated against the
+  walkthrough structure itself. =SCRIPTS/validate-walkthroughs.py='s v5
+  check that failed on a non-=.org= SESH file is removed; the
+  =NN-<tool>-SESH.<ext>= naming pattern and the must-be-linked-from-Notes
+  rule are unchanged. Unconditional, same as the rule it replaces.
+- *v5* (2026-08-21): New CRITICAL RULE in the External Session Workflow
+  ([[file:02-expansion-guide.org][02-expansion-guide.org]]): most external
+  AI tools can't natively emit =.org= (e.g. Gemini exports Markdown) — that
+  export is fine to capture as-is, but it must be *converted* to =.org=
+  during reconciliation before it counts as the package's session-export
+  file, with the original-format file removed rather than kept alongside
+  it. =SCRIPTS/validate-walkthroughs.py= now fails on any
+  =NN-<tool>-SESH.<ext>= file whose extension isn't =.org= — previously
+  such a file was invisible to the validator entirely (only the exact
+  =.org= naming pattern was ever checked). This rule is unconditional,
+  like the existing SESH-link-must-exist check — a package either has a
+  stray non-.org export sitting in it or it doesn't, regardless of which
+  guide version it declares.
+- *v4* (2026-08-21): =For AI Assistants= (see
+  [[file:02-expansion-guide.org][02-expansion-guide.org]]) now carries real
+  pedagogy, not just behavior rules: orientation-on-load (summarize
+  progress before proceeding, since a fresh AI session has no memory of
+  prior ones), Socratic-first explanations (ask the human's guess before
+  revealing =*Why:*=), and interleaved recall checks after each step
+  instead of testing only at the terminal Quiz. Also adds a new header
+  keyword, =#+LAST_REVIEWED:=, for spaced-repetition tracking — the
+  validator warns (never fails) when a package's checklist is fully
+  checked but =#+LAST_REVIEWED:= has gone stale (>30 days), signaling a
+  refresher session is due. Section presence is still gated at v2+ per the
+  existing rule; the new content simply changes what the boilerplate text
+  itself says.
+- *v3* (2026-08-21): New CRITICAL RULE in
+  [[file:02-expansion-guide.org][02-expansion-guide.org]]'s Guide
+  section — a checked (=[X]=) step must contain a non-empty =*Result:*=
+  block or the package fails validation. This is the mechanical
+  enforcement of "no step is marked done without its own real, verified
+  output": before this version the rule was prose only (in the Teaching
+  Contract and =For AI Assistants=) and a box could be checked with no
+  evidence at all without the validator noticing.
+- *v2* (2026-08-21): New =External Session Workflow= section in
+  [[file:02-expansion-guide.org][02-expansion-guide.org]] — a
+  =NN-<tool>-SESH.org= naming convention for session-export files brought
+  back from working a walkthrough in a separate AI chat, plus CRITICAL
+  RULEs that such exports are claims (not evidence) requiring real verified
+  output to reconcile, that a closed-question self-check quiz never
+  satisfies the walkthrough's own open-ended Quiz, and that every
+  session-export file must be linked from =walkthrough.org='s Notes section
+  — checked by the validator. Also adds a required =* For AI Assistants=
+  section (fixed boilerplate, see the Template) briefing whatever AI reads
+  the file next on the teaching contract and the exact session-report
+  format expected back — required for packages declaring v2+; a package
+  still declaring v1 only gets the existing version-staleness warning.
+- *v1* (2026-08-21): =* Problem=, =* TODO ... [x/n]= Guide (checklist
+  steps each carrying their own =:ID:=), =* Notes=, =* Search
+  Prompts=, =* Quiz= + =** Answer Key= (exactly 5 questions, exactly 5
+  answers). Baseline version — covers everything required as of the
+  =#+WALKTHROUGH_GUIDE_VERSION:= line's own introduction.

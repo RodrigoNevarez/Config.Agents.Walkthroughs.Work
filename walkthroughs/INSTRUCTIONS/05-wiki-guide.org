@@ -1,0 +1,206 @@
+#+TITLE: Project Wiki Guide
+#+DATE: 2026-08-22
+
+Single source of truth for =.agents/wikis/= — the project's current-state
+spec, living alongside the walkthrough system but serving a different
+purpose. Referenced by
+[[file:02-expansion-guide.org][02-expansion-guide.org]] instead of
+restating it, same principle as [[file:00-conventions.org][00-conventions.org]].
+
+* Purpose
+
+A walkthrough is immutable history: once archived, it is never rewritten —
+it permanently records *how* a decision was reached, including wrong first
+guesses and corrected reasoning, because that record is what makes it a
+teaching artifact. That is exactly the wrong shape for answering "what does
+this project actually do right now" — reconstructing current state from six
+archived walkthroughs, each carrying its own reasoning and dead ends, is
+real friction every time it's needed.
+
+The wiki exists to hold the opposite shape: a small set of pages that state
+the project's *current* truth plainly, and get edited in place whenever
+that truth changes. It is not a second history — =CHANGELOG.org= (below)
+records that something changed and why, but the page itself never
+accumulates old content. If you want the reasoning behind *why* the current
+state is what it is, follow the page's =* Justified By= link into the
+walkthrough that produced it.
+
+*This wiki is project-specific, not a generic knowledge base.* A page
+exists because a real decision was made about this project, not because a
+general concept recurred across walkthroughs. Do not add a page for a
+transferable-but-not-project-specific idea (e.g. a general API-design
+principle with no bearing on this codebase's own current state) — that
+kind of content belongs in the walkthrough's own Notes, not here. A generic
+wiki would duplicate what the archive already provides and require
+ongoing upkeep unrelated to this project's own pace of change; a project
+wiki only needs to move when the project itself does.
+
+* Directory Structure
+
+#+begin_src text
+.agents/wikis/
+  index.org       - entry point: one-line current state of every page,
+                     grouped by category. Read this first.
+  CHANGELOG.org    - append-only: what changed, when, from which
+                     walkthrough. Newest entries at the top.
+  <topic>.org      - one page per project subsystem/decision
+#+end_src
+
+*CRITICAL RULE — every file in =.agents/wikis/= must be =.org=.* No
+exceptions, unlike the walkthrough system's session-export files (which
+are deliberately allowed to stay in whatever format an external tool
+produced). A wiki page is authored content, not a captured artifact — it
+must be readable the same way every other file in this system is,
+including directly in Emacs.
+
+*Flat, no subfolders, kebab-case filenames for topic pages.* Folders carry
+almost no semantic signal for either a human or an LLM skimming this
+directory — the link graph (=* Related=, =* Justified By=) is what
+actually carries structure here, the same principle behind why
+Obsidian/Zettelkasten-style personal knowledge systems favor rich linking
+over deep folder hierarchies. =index.org= is the map; the folder itself
+doesn't need to be. =index.org= and =CHANGELOG.org= are the two fixed-name
+exceptions to kebab-case — every =<topic>.org= page follows it.
+
+** UUID Placement
+
+Same rule as the rest of this system: every wiki page gets a permanent
+=:ID:= via a =:PROPERTIES:= drawer (see
+[[file:00-conventions.org][00-conventions.org]]'s UUID Convention — the
+single copy of this rule). This gives a page a stable handle independent of
+its filename, the same reason a walkthrough step gets one.
+
+* Page Template
+
+#+BEGIN_SRC org
+#+TITLE: <A claim, stated directly — not a generic topic label>
+#+DATE: <ISO date, updated whenever the page's content changes>
+:PROPERTIES:
+:ID:       <uuid>
+:END:
+
+* Current State
+
+<Short, bulleted. The current spec/decision, stated plainly. Not a
+narrative, not the reasoning — that's what "Justified By" is for. Bullets
+that would still be true if read completely out of context of when they
+were written.>
+
+* Justified By
+
+- [[file:../walkthroughs/archive/<uuid>.org][<Walkthrough title>]]
+
+* Related
+
+- [[file:<other-topic>.org][<Other topic>]] — <why they're related, one
+  clause>
+#+END_SRC
+
+*CRITICAL RULE — the title states the claim, not a label.* "Authentication"
+tells a reader nothing without opening the file; "The server authenticates
+via a fine-grained PAT scoped to Issues: Read and write only" tells them
+the current truth from =index.org= alone, before they ever open the page.
+This is the atomic-note principle from Zettelkasten/Obsidian practice,
+applied here for the same reason it works there: a title that already
+states the fact is scannable, and scannability is what makes =index.org=
+useful as a single entry point instead of a directory listing.
+
+*CRITICAL RULE — no narrative, no history, on the page itself.* If a
+decision changes, edit the =* Current State= section to reflect the new
+truth and update =#+DATE:= — don't leave the old text struck through or
+append "(previously X)" inline. The old truth, and why it changed, belongs
+in =CHANGELOG.org= and in whichever walkthrough drove the change. A page
+that accumulates its own history duplicates what the walkthrough archive
+already exists to hold, and stops being quick to scan.
+
+*=* Related= is optional, =* Justified By= is not.* A page is allowed to
+have nothing else to link to yet — don't invent a relation to satisfy the
+template. =* Justified By= always exists, because a page can't exist
+without some decision behind it. Neither the presence nor the count of
+=* Related= links is checked by the validator; =* Justified By= is (see
+below).
+
+* When a Page Gets Created or Updated
+
+A wiki page is created or updated when a real decision affecting this
+project's current state is made or changed — normally, when a walkthrough
+reaches its final decision step. There is no "recurs across two or more
+walkthroughs" bar to clear (that would be the trigger for a *generic*
+knowledge base, which this explicitly isn't) — one real decision is
+sufficient.
+
+1. Write or update the page's =* Current State= section.
+2. Point (or repoint) =* Justified By= at the walkthrough that produced the
+   current state.
+3. Update =* Related= links in both this page and any page it now relates
+   to or no longer relates to.
+4. Add an entry to =CHANGELOG.org= (below).
+5. Add or update the page's one-line summary in =index.org=.
+6. Optionally, add a =* Wiki= link from the driving walkthrough's own Notes
+   section back to this page — this is additive only: a walkthrough's
+   existing Notes content (including any older "concept-promotion flag"
+   bullets written before this guide existed) is never rewritten or
+   removed, since walkthroughs stay immutable history. See
+   [[file:02-expansion-guide.org][02-expansion-guide.org]]'s Notes section
+   for how the concept-promotion flag itself is now described.
+
+* CHANGELOG.org Conventions
+
+Append-only, newest date first, one line per page touched:
+
+#+begin_src org
+- =created=|=updated= | =<page>.org= | <one-clause reason, and the
+  walkthrough that drove it>
+#+end_src
+
+This is what actually answers "how has the project mutated over time" —
+not the wiki pages themselves, which only ever show the present. Never
+edit or remove a past entry; a correction gets a new entry, same as any
+other change.
+
+* index.org Conventions
+
+- Must list every actual page in the directory — an orphaned page (one
+  that exists but isn't in the index) defeats the entire point of having a
+  single entry point.
+- One line per page: filename, then a genuinely one-line summary of its
+  current claim — not the full =* Current State= section repeated.
+- Grouped by category as the page count grows; flat is fine while it's
+  small.
+
+* What the Validator Checks
+
+- =.agents/wikis/index.org= must exist — the directory has no valid state
+  without an entry point.
+- Every file directly inside =.agents/wikis/= (other than =index.org= and
+  =CHANGELOG.org=) has extension =.org= — no exceptions.
+- Every =<topic>.org= page is listed with a =file:= link somewhere in
+  =index.org= — catches an orphaned page the same way the walkthrough
+  system catches an unlinked session export.
+- Every =<topic>.org= page has a =:PROPERTIES:= drawer with a valid =:ID:=
+  (see UUID Placement, above) — checked the same way a walkthrough step's
+  =:ID:= is checked.
+- Every wiki page's =:ID:= is registered into the same global
+  collision-check namespace as every walkthrough and index UUID — a wiki
+  page colliding with a walkthrough step's UUID fails, exactly like any
+  other collision in this system.
+- Every page's =* Justified By= link resolves to a real file under
+  =.agents/walkthroughs/archive/= — a page whose justification link is
+  broken is worse than a missing page, since it looks authoritative while
+  citing nothing real.
+
+* Best Practices
+
+1. State the current truth; link out for the reasoning. Don't re-explain
+   *why* on the wiki page — that duplicates the walkthrough and drifts out
+   of sync with it over time.
+2. Keep pages short and bulleted. A page a reader can't scan in a few
+   seconds is fighting the entire reason =index.org= exists.
+3. Update in place. A page that never shows its own history is doing its
+   job correctly — =CHANGELOG.org= and the walkthrough archive are where
+   history belongs.
+4. Don't create a page for something that isn't this project's own current
+   state. A general, transferable principle belongs in a walkthrough's own
+   Notes, not here — see Purpose, above.
+5. Run the validator after any wiki change, same as any other change to
+   this system.

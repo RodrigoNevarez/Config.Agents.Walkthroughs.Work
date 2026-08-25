@@ -1,0 +1,150 @@
+#+TITLE: Walkthroughs Index Maintenance Guide
+
+This guide details how to create, structure, and maintain
+[[file:../index.org][index.org]], the entry point for this
+repository's *walkthroughs*: teaching artifacts that document how a
+real problem was solved, written so the solving builds the human's own
+understanding instead of leaving them dependent on the agent for the
+next similar problem. See
+[[file:02-expansion-guide.org][02-expansion-guide.org]] for how an
+individual topic gets expanded into a full walkthrough package, and
+[[file:00-conventions.org][00-conventions.org]] for the issue-tracker
+mental model and UUID rules both guides share — this file only covers
+what's specific to =index.org= itself.
+
+Walkthroughs are not scoped to any one project or repository's setup
+— a topic can be anything worth documenting this way. =index.org= is
+where every topic lives, expanded or not; the actual write-ups live
+alongside it as per-topic packages.
+
+* Index Structure & Hierarchy
+
+The index is Org-mode, organized hierarchically so related issues stay
+discoverable — this grouping is just for navigation, the way a tracker
+groups issues by project or milestone; it isn't what determines state:
+
+- *Level 1 (=*=)*: broad domains (e.g. =Environment & Tooling=,
+  =Software Engineering=). Add new domains as they come up — the index
+  is not limited to any fixed set.
+- *Level 2 (=**=)*: subcategories within a domain.
+- *Level 3 (=***=)*: an individual issue/topic. This is the node that
+  carries the =TODO=/=DONE= state and the =:ID:= property, and, once
+  closed, the link to its walkthrough package.
+
+** The UUID Placement Rule
+Every Level 3 node MUST include a =:PROPERTIES:= drawer containing a
+unique =:ID:=, which becomes the name of the topic's package directory
+once it's closed (see
+[[file:02-expansion-guide.org][02-expansion-guide.org]]). See
+[[file:00-conventions.org][00-conventions.org]]'s UUID Convention
+section for the generation and placement rules — same rules, one
+place, shared with the walkthrough packages themselves.
+
+** The Step Property
+
+Alongside =:ID:=, every Level 3 node also carries a =:STEP:= — a positive
+integer. Its purpose is different from everything else in this drawer:
+=:ID:= identifies *this* node; =:STEP:= records where it sits in *this
+project's own recommended build sequence for its class of project* (e.g.
+"an MCP server integrating an external API"), so that a future, similar
+project can retrace the same sequence of decisions instead of rediscovering
+it from scratch. This exists because walkthroughs, per this guide's own
+intro, "are not scoped to any one project or repository's setup" — the
+index for one project is itself a reusable template for the next one like
+it.
+
+*CRITICAL RULE — =:STEP:= is the recommended order, not a historical
+timestamp.* It does not necessarily match the order issues were actually
+filed or resolved in this specific run — real work sometimes gets tackled
+out of order, revisited, or batched unevenly across sessions. =:STEP:=
+records the *clean* sequence a future similar project should actually
+follow, which is usually close to (but not obligated to match) the real
+history.
+
+*CRITICAL RULE — assign once, never renumber.* A =:STEP:= is permanent
+from the moment it's assigned. Never renumber existing nodes to close a
+gap left by a later-pruned issue (Best Practice 3, below) — that would
+mean silently rewriting a number a reader may already have referenced
+elsewhere, the same reason archived walkthrough packages themselves are
+never rewritten (see [[file:04-archive-guide.org][04-archive-guide.org]]).
+A new issue gets the next unused integer, continuing the sequence — never
+a number reused from a pruned issue.
+
+Every Level 3 node needs a =:STEP:=, =TODO= or =DONE= — the sequence exists
+to be followed forward, so an unexpanded issue still needs its place in
+line, not just the ones already closed.
+
+** Open vs. Closed Issues
+- *Open (=TODO=)*: heading + =:ID:= drawer + a short description of
+  the problem, with no walkthrough link yet. This is a filed issue —
+  something worth documenting the next time it's actually solved.
+- *Closed (=DONE=)*: the same node, plus a =- *Walkthrough:*
+  [[file:<uuid>/walkthrough.org][...]]= line pointing at its package
+  directory.
+
+Don't force every issue open today to be closed immediately. Filing a
+topic costs nothing; writing the full walkthrough is worth doing only
+when the problem is actually being worked through.
+
+* Index Template
+
+#+BEGIN_SRC org
+#+TITLE: Walkthroughs Index
+#+DESCRIPTION: Central index of problem-solving walkthroughs — teaching artifacts, not fix logs.
+#+OPTIONS: toc:nil num:nil
+
+* <Domain>
+  <One line describing what this domain covers.>
+
+** <Subcategory>
+*** TODO <Problem Title>                                     :some-tag:
+    :PROPERTIES:
+    :ID:       xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    :STEP:     1
+    :END:
+    One or two sentences on what the problem is and why it matters.
+
+*** DONE <Another Problem Title>
+    :PROPERTIES:
+    :ID:       yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
+    :STEP:     2
+    :END:
+    One or two sentences on what the problem is and why it matters.
+    - *Walkthrough:* [[file:yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy/walkthrough.org][Another Problem Title]]
+#+END_SRC
+
+* Linking & Navigation
+
+- Link to a topic's package from the index with a relative =file:=
+  link: =[[file:<uuid>/walkthrough.org][Topic Title]]=.
+- Link between two walkthrough packages (sibling directories) by
+  stepping up one level first: =[[file:../<other-uuid>/walkthrough.org][...]]=.
+- Link from a walkthrough back to something elsewhere in the
+  repository using a relative path from inside its package directory
+  (e.g. three levels up to reach the repo root: =../../../docs/...=).
+
+* Best Practices
+
+1. *Use relative paths* for every link, so the whole tree stays
+   portable.
+2. *Keep the hierarchy shallow but real* — don't invent Level 2
+   subcategories with only one topic in them; don't flatten a genuinely
+   broad domain into one bucket either. Use tags, not new
+   subcategories, for a topic that cuts across more than one.
+3. *Prune stale open issues* — if a filed topic turns out not to be
+   worth documenting, remove it rather than letting the index
+   accumulate dead entries.
+4. *Consistent naming*: heading text should be the same imperative,
+   specific problem statement used as the =#+TITLE:= of the closed
+   issue's =walkthrough.org=.
+5. *Run the validator* after editing =index.org= —
+   =SCRIPTS/validate-walkthroughs.py= checks every node has a valid,
+   unique =:ID:=, a valid, unique =:STEP:=, that DONE nodes have a matching
+   package directory, and that TODO nodes don't. It catches exactly the
+   mistakes the CRITICAL RULEs above are trying to prevent, mechanically
+   instead of by memory.
+6. *When filing a new issue, assign the next unused =:STEP:=* — check the
+   highest =:STEP:= currently in =index.org= and use one more than that,
+   regardless of which =:ID:= is oldest or which subcategory the new issue
+   lands in. The sequence is global across the whole index, not per
+   subcategory.
