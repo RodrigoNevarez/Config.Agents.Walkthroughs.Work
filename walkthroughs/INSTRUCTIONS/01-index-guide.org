@@ -61,14 +61,31 @@ records the *clean* sequence a future similar project should actually
 follow, which is usually close to (but not obligated to match) the real
 history.
 
-*CRITICAL RULE — assign once, never renumber.* A =:STEP:= is permanent
-from the moment it's assigned. Never renumber existing nodes to close a
-gap left by a later-pruned issue (Best Practice 3, below) — that would
-mean silently rewriting a number a reader may already have referenced
-elsewhere, the same reason archived walkthrough packages themselves are
-never rewritten (see [[file:04-archive-guide.org][04-archive-guide.org]]).
-A new issue gets the next unused integer, continuing the sequence — never
-a number reused from a pruned issue.
+*CRITICAL RULE — a =DONE= node's =:STEP:= is permanent; a =TODO= node's is
+not.* Once a node closes (=DONE=), its =:STEP:= is locked — same reasoning
+as archived walkthrough packages never being rewritten (see
+[[file:04-archive-guide.org][04-archive-guide.org]]): it's now a historical
+record of what was actually done, in what order, and a future project may
+already be mid-sequence following that exact number.
+
+An open (=TODO=) node's =:STEP:= is a *plan*, not a record, and real
+projects shift — priorities change mid-stream, an issue gets deferred, a
+new one turns out to belong earlier than issues already filed. Renumbering
+the still-open nodes to reflect the current intended sequence is allowed,
+and often necessary — treating an unsolved issue's =:STEP:= as frozen the
+instant it's typed would leave the index describing a build order nobody
+actually intends to follow anymore, which defeats the whole point of
+maintaining it. When priorities shift, reorder the =TODO= nodes' =:STEP:=
+values to match. Renumbering can also close a gap left by a pruned issue
+(Best Practice 3, below) as long as every renumbered node is still =TODO=.
+
+Never renumber a =DONE= node to make room for a reordered =TODO= one — a
+closed step's position in history doesn't move just because what comes
+after it changed. If a =TODO= needs to land between two =DONE= steps'
+numbers, it's fine for the resulting sequence to be non-contiguous (e.g.
+=DONE= at 3 and 5, the reordered =TODO= landing at 4 having previously been
+7) — =:STEP:= only has to be a valid, globally unique positive integer that
+sorts into the right relative order; it was never a dense 1..n count.
 
 Every Level 3 node needs a =:STEP:=, =TODO= or =DONE= — the sequence exists
 to be followed forward, so an unexpanded issue still needs its place in
@@ -143,8 +160,18 @@ when the problem is actually being worked through.
    package directory, and that TODO nodes don't. It catches exactly the
    mistakes the CRITICAL RULEs above are trying to prevent, mechanically
    instead of by memory.
-6. *When filing a new issue, assign the next unused =:STEP:=* — check the
-   highest =:STEP:= currently in =index.org= and use one more than that,
-   regardless of which =:ID:= is oldest or which subcategory the new issue
-   lands in. The sequence is global across the whole index, not per
-   subcategory.
+6. *When filing a new issue, start by assigning the next unused =:STEP:=*
+   — check the highest =:STEP:= currently in =index.org= and use one more
+   than that, regardless of which =:ID:= is oldest or which subcategory
+   the new issue lands in. The sequence is global across the whole index,
+   not per subcategory. If the new issue actually belongs earlier in the
+   build order, follow up with Best Practice 7 rather than leaving it
+   parked at the end.
+7. *Reorder =TODO= =:STEP:=s as priorities shift* — when an ongoing
+   project changes the order remaining issues should actually be tackled
+   in, renumber the affected =TODO= nodes to match. This is expected
+   maintenance, not a mistake to avoid: a stale sequence that no longer
+   reflects the real intended order is worse than a renumbered one. Leave
+   every =DONE= node's =:STEP:= untouched, and re-run the validator
+   afterward to confirm the renumbering didn't collide with an existing
+   value.
