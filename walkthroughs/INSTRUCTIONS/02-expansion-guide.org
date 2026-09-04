@@ -84,8 +84,23 @@ not just what shape it takes.
      out one way or another — it must not state or clearly imply which way
      it actually did, or what the project's eventual decision is. Working
      the step for real, live, is what that's for.
-5. *Write Notes and Search Prompts.*
-6. *Close the issue in [[file:../index.org][index.org]]* and run the
+5. *Audit the checklist for gaps before moving on — the expert blind
+   spot.* Whoever just solved this (frequently an AI, having already done
+   steps 1-4) has already automated the intermediate decisions and
+   diagnostic checks that got them to the fix — which means the first
+   draft of the checklist reliably omits some of them, not from
+   carelessness but because they no longer feel like separate steps to
+   someone who already knows the answer. Re-read the checklist as if
+   seeing it for the first time and ask: is there a decision, a check, or
+   a precondition that actually happened but isn't its own step? What
+   reads as "obviously the next thing to do" to the author is exactly
+   what's most likely to be invisible to the human working through it
+   cold. (See
+   [[file:../../RESEARCH/re01-cognitive-load-in-walkthrough-design.md][RESEARCH/re01]]
+   — its Cognitive Task Analysis finding: experts routinely fail to
+   articulate roughly 70% of the decisions they actually make.)
+6. *Write Notes and Search Prompts.*
+7. *Close the issue in [[file:../index.org][index.org]]* and run the
    validator, per the Expansion Workflow above.
 
 Every step above still happens again, for real, when the walkthrough is
@@ -158,10 +173,55 @@ fine — the Guide section is where it gets diagnosed.
 ** 2. Guide
 A =* TODO <title> [x/n]= checklist, one Org checkbox per concrete step.
 
+*Group steps under subgoal labels once the checklist runs long.* A flat
+list of many checkboxes reads as one undifferentiated sequence — nothing
+distinguishes an architectural decision from routine setup, and the
+reader has to hold every step in mind at once to see the shape of the
+work. Once a checklist runs past roughly five or six steps, nest them
+under =** <Subgoal Label>= sub-headings inside this section — a handful
+of functional milestones (e.g. =** Configure Authentication=, =** Wire
+Up the Webhook=), each with its own steps underneath:
+#+begin_src org
+* TODO <Title> [0/4]
+** Configure Authentication
+- [ ] <Step 1> *[you-run]*
+  ...
+- [ ] <Step 2> *[you-run]*
+  ...
+** Wire Up the Webhook
+- [ ] <Step 3> *[you-run]*
+  ...
+- [ ] <Step 4> *[agent-run]*
+  ...
+#+end_src
+This is opt-in the same way Step-Level Expansion (below) is — a short
+checklist doesn't need invented subgoals for three steps, and
+=SCRIPTS/validate-walkthroughs.py= doesn't require or check for subgoal
+headings either way; it finds checklist steps the same way regardless of
+what headings sit between them. Use it when it actually clarifies the
+shape of the work. (See
+[[file:../../RESEARCH/re01-cognitive-load-in-walkthrough-design.md][RESEARCH/re01]]
+— this is its subgoal-labeling finding: grouping steps under functional
+milestones measurably improves transfer over a flat list.)
+
 *CRITICAL RULE — every step must include a =*Why:*= line.* A step
 that shows a command but not the mechanism it addresses is incomplete
 — it's a log entry, not a walkthrough. The =*Why:*= is the entire
 point of this document existing.
+
+*CRITICAL RULE — a =*Why:*= line must pass the load-bearing test.* Keep it
+only if it states something the step's own command or config *doesn't
+already make obvious* — a hidden invariant, a design constraint, a side
+effect that isn't visible from the syntax. Cut it if it just restates the
+step in prose (=timeout = 60= followed by "*Why:* sets the timeout to 60
+seconds") or reaches for engaging-but-irrelevant color — history, trivia,
+an anecdote — to make the step more interesting. Both cost the reader
+time to parse without adding understanding, and the second actively pulls
+attention away from the mechanism that actually matters; a =*Why:*= that
+doesn't survive this test is worse than none. (See
+[[file:../../RESEARCH/re01-cognitive-load-in-walkthrough-design.md][RESEARCH/re01]]
+— this codifies its redundancy-effect and seductive-details-effect
+findings.)
 
 *CRITICAL RULE — mark who runs each step.* Tag each item
 =*[you-run]*= or =*[agent-run]*=. Default to =*[you-run]*= for the
@@ -233,6 +293,16 @@ of making them parse the raw output cold.
 - Open questions or steps that were deliberately skipped, and why.
 - Links to related walkthrough packages
   (=[[file:../<uuid>/walkthrough.org][...]]=).
+- *Decision:* entries capture a roadblock, pivot, or option genuinely
+  weighed during the session that doesn't map to any single step's
+  =*Result:*= — the content a flat step-by-step record structurally loses
+  (see
+  [[file:../../RESEARCH/re02-design-rationale-capture-frameworks.md][RESEARCH/re02]]).
+  Format: facing <the issue>, considered <the real alternatives>, went
+  with <what was picked> because <why>, accepting <what that costs>. A
+  sentence or two per decision — deliberately lighter than a full
+  argument graph; see the CRITICAL RULE on capturing these live, in the
+  External Session Workflow below.
 - *Wiki update*: when this walkthrough's final step lands on a decision
   that changes this project's current state (a language choice, a
   credential model, a schema, anything a future reader would actually want
@@ -350,7 +420,10 @@ These are behavior rules for the agent, not just document formatting:
    run it directly when they ask you to, or it's tagged
    =*[agent-run]*=.
 2. Never omit the =*Why:*= to save time. If you don't know the why,
-   that's worth saying explicitly rather than skipping it.
+   that's worth saying explicitly rather than skipping it. Padding it
+   with a restated obvious or interesting-but-irrelevant trivia doesn't
+   satisfy this rule either — see the Guide section's load-bearing test,
+   above.
 3. If a problem matches something already in the wiki or a prior
    walkthrough, link to it instead of re-deriving it — but still write
    the =*Why:*= for *this* instance, since the specific trigger
@@ -388,8 +461,11 @@ matters is who is driving, not which chat window is open.
    =*[you-run]*=/=*[agent-run]*= tags and =*Why:*= lines as the script for
    that conversation.
 2. *Close out the external session deliberately*, by asking it for a
-   session-export summary: what was covered, key learnings, and what's
-   still outstanding.
+   session-export summary: what was covered, key learnings, what's still
+   outstanding, and every decision, roadblock, or pivot hit along the way
+   — not just a step-by-step recap of outputs. See the Template's =For AI
+   Assistants= boilerplate below for the exact ask, and the CRITICAL RULE
+   on capturing these live, below.
 3. *Save the raw export in whatever format the tool actually produced,
    renamed to fit the convention.* Most external AI products cannot emit
    =.org= — Gemini, for instance, exports Markdown. That's fine; don't
@@ -442,6 +518,22 @@ checking happened once, elsewhere, by a different AI. See
 =For AI Assistants='s =Do your own research for confirmation steps= pillar
 in the Template below — this is that same discipline, applied specifically
 to reconciling a SESH file rather than to a fresh step.
+
+** CRITICAL RULE — capture decisions live, not reconstructed afterward
+
+A =*Decision:*= entry (see =* Notes= in Required Structure, above) must
+come from the external AI's own session-export, written while it still
+has the actual conversation in context — not something the human
+reconstructs from memory during reconciliation. Human memory of *why* a
+choice was made reliably sanitizes itself once the outcome is already
+known, smoothing a messy real deliberation into a cleaner story than what
+actually happened — the post-hoc-rationalization failure mode documented
+in
+[[file:../../RESEARCH/re02-design-rationale-capture-frameworks.md][RESEARCH/re02]].
+If the session-export didn't capture a decision, don't invent a tidy
+justification for it after the fact during reconciliation — note in Notes
+that the decision happened but its rationale wasn't captured, rather than
+backfilling one.
 
 ** CRITICAL RULE — link every session-export file
 
@@ -519,6 +611,16 @@ before doing anything else.
   - anywhere the human hesitated, guessed, or got something wrong before
     getting it right, since that's still relevant context for whoever
     reconciles the session afterward.
+  Also report every *decision, roadblock, or pivot* that happened during
+  the session, even one that doesn't map to any single step — a wrong
+  approach abandoned partway through, an option considered and rejected,
+  a question that changed the direction of the work. Capture each one now,
+  while you still have the actual conversation in context, not as
+  something the human has to reconstruct later from memory: state what
+  the issue or question was, what options were actually considered, which
+  one was picked and why, and what was given up by not picking the
+  others. A flat step-by-step record structurally loses exactly this kind
+  of content — don't let your summary do the same.
 - Nothing in your summary checks a box on its own. A human (or another
   agent) still reconciles it afterward against this rule: no step is marked
   done without its own real, verified output.
@@ -606,3 +708,17 @@ before doing anything else.
     an AI happens to read aloud. Trimming that section down to "don't do
     steps for the human" keeps the letter of the Teaching Contract but
     loses most of what makes it work.
+11. *Group a long checklist under subgoal labels* (see the Guide
+    section, above) once it runs past roughly five or six steps — don't
+    leave a reader to hold a dozen flat checkboxes in mind at once to
+    see the shape of the work. Don't force it on a short checklist
+    either; three steps don't need invented subgoals.
+12. *Run every =*Why:*= line through the load-bearing test* (see the
+    Guide section, above) before considering a step finished — restating
+    the obvious or reaching for interesting trivia both cost the reader
+    parsing time without adding understanding.
+13. *Capture decisions, roadblocks, and pivots as their own =*Decision:*=
+    entries* (see =* Notes= in Required Structure, above), not just step
+    outputs — extracted by whoever still has the actual session in
+    context (the external AI itself, at session-close) rather than
+    reconstructed from memory later during reconciliation.

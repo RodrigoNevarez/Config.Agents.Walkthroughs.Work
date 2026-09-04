@@ -1,5 +1,5 @@
 #+TITLE: Walkthrough Shared Conventions
-#+WALKTHROUGH_GUIDE_VERSION: 13
+#+WALKTHROUGH_GUIDE_VERSION: 15
 
 Single source of truth for conventions shared by
 [[file:01-index-guide.org][01-index-guide.org]] (the index),
@@ -76,6 +76,55 @@ failure, so staleness stays visible instead of silent.
 
 ** Changelog
 
+- *v15* (2026-09-04): Applied
+  [[file:../../RESEARCH/re02-design-rationale-capture-frameworks.md][RESEARCH/re02-design-rationale-capture-frameworks.md]]
+  (design rationale capture research: IBIS/QOC/ADR lineage) to
+  [[file:02-expansion-guide.org][02-expansion-guide.org]]'s External
+  Session Workflow and Notes section. The session-export ask (Template's
+  =For AI Assistants= boilerplate, and the External Session Workflow's own
+  Workflow step 2) now requires the external AI to also report every
+  decision, roadblock, or pivot hit during the session — not just
+  per-step output — in a lightweight Y-Statement-style form (issue,
+  options considered, choice, trade-off accepted). New =* Notes= entry
+  type, =*Decision:*=, to hold these. New CRITICAL RULE — capture
+  decisions live, not reconstructed afterward — requiring the entry come
+  from the external AI's own export (written while it still has the
+  actual conversation in context) rather than the human's memory during
+  reconciliation, since hindsight reliably sanitizes real deliberation
+  into a cleaner story than what happened (the research's
+  post-hoc-rationalization finding). Deliberately kept to a sentence or
+  two per decision rather than adopting a full argument-graph notation
+  (IBIS/AIF) — the same research documents those failing to get adopted
+  in practice from live-capture cognitive overhead, which is exactly the
+  failure mode this system's existing plain-text, capture-after-the-fact
+  design already avoids. Requested directly: the user's own experience is
+  that session-export reports were losing exactly this content, reporting
+  only step outputs from sessions that were "rich in decisions,
+  roadblocks, questions and pivots."
+- *v14* (2026-09-04): Applied three findings from
+  [[file:../../RESEARCH/re01-cognitive-load-in-walkthrough-design.md][RESEARCH/re01-cognitive-load-in-walkthrough-design.md]]
+  (Cognitive Load Theory / worked-example research) to
+  [[file:02-expansion-guide.org][02-expansion-guide.org]]. (1) New
+  CRITICAL RULE in the Guide section: a =*Why:*= line must pass a
+  load-bearing test — retained only if it states a non-obvious invariant,
+  constraint, or side effect; cut if it restates the step in prose (the
+  redundancy effect) or reaches for interesting-but-irrelevant color (the
+  seductive-details effect). Prose-only, like v10-v12 — not separately
+  mechanically validated, since the validator has no way to judge a
+  =*Why:*= line's content, only its presence. (2) New optional guidance
+  in the same section: group a checklist past roughly five or six steps
+  under =** <Subgoal Label>= sub-headings (the subgoal-labeling finding —
+  functional grouping over a flat list measurably improves transfer).
+  Opt-in, not required — =SCRIPTS/validate-walkthroughs.py= already finds
+  checklist steps by scanning for the checkbox pattern regardless of what
+  headings sit between them, so this needed no validator change. (3) New
+  step 5 in the Authoring Workflow: audit the freshly-written checklist
+  for gaps before moving on, since the Cognitive Task Analysis finding
+  cited in the research (experts fail to articulate roughly 70% of the
+  decisions they actually make) applies directly to whoever — frequently
+  an AI — just solved the problem and is now the one writing the
+  checklist down. Requested directly, after the user pointed at the
+  RESEARCH directory and asked to apply what it contains.
 - *v13* (2026-08-25): Removed the Quiz module (=03-quiz-guide.org=) and the
   Flashcards feature (=06-flashcards-guide.org=, =.agents/flashcards/=)
   entirely, along with every cross-reference to either. This system exists
