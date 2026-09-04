@@ -76,9 +76,8 @@ failure, so staleness stays visible instead of silent.
 
 ** Changelog
 
-- *v15* (2026-09-04): Applied
-  [[file:../../RESEARCH/re02-design-rationale-capture-frameworks.md][RESEARCH/re02-design-rationale-capture-frameworks.md]]
-  (design rationale capture research: IBIS/QOC/ADR lineage) to
+- *v15* (2026-09-04): Applied findings from internal design-rationale-
+  capture research (IBIS/QOC/ADR lineage) to
   [[file:02-expansion-guide.org][02-expansion-guide.org]]'s External
   Session Workflow and Notes section. The session-export ask (Template's
   =For AI Assistants= boilerplate, and the External Session Workflow's own
@@ -101,9 +100,8 @@ failure, so staleness stays visible instead of silent.
   that session-export reports were losing exactly this content, reporting
   only step outputs from sessions that were "rich in decisions,
   roadblocks, questions and pivots."
-- *v14* (2026-09-04): Applied three findings from
-  [[file:../../RESEARCH/re01-cognitive-load-in-walkthrough-design.md][RESEARCH/re01-cognitive-load-in-walkthrough-design.md]]
-  (Cognitive Load Theory / worked-example research) to
+- *v14* (2026-09-04): Applied three findings from internal Cognitive Load
+  Theory / worked-example research to
   [[file:02-expansion-guide.org][02-expansion-guide.org]]. (1) New
   CRITICAL RULE in the Guide section: a =*Why:*= line must pass a
   load-bearing test — retained only if it states a non-obvious invariant,

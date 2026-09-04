@@ -95,10 +95,8 @@ not just what shape it takes.
    a precondition that actually happened but isn't its own step? What
    reads as "obviously the next thing to do" to the author is exactly
    what's most likely to be invisible to the human working through it
-   cold. (See
-   [[file:../../RESEARCH/re01-cognitive-load-in-walkthrough-design.md][RESEARCH/re01]]
-   — its Cognitive Task Analysis finding: experts routinely fail to
-   articulate roughly 70% of the decisions they actually make.)
+   cold. (Grounded in Cognitive Task Analysis research: experts routinely
+   fail to articulate roughly 70% of the decisions they actually make.)
 6. *Write Notes and Search Prompts.*
 7. *Close the issue in [[file:../index.org][index.org]]* and run the
    validator, per the Expansion Workflow above.
@@ -199,10 +197,9 @@ checklist doesn't need invented subgoals for three steps, and
 =SCRIPTS/validate-walkthroughs.py= doesn't require or check for subgoal
 headings either way; it finds checklist steps the same way regardless of
 what headings sit between them. Use it when it actually clarifies the
-shape of the work. (See
-[[file:../../RESEARCH/re01-cognitive-load-in-walkthrough-design.md][RESEARCH/re01]]
-— this is its subgoal-labeling finding: grouping steps under functional
-milestones measurably improves transfer over a flat list.)
+shape of the work. (Grounded in the subgoal-labeling finding from
+cognitive load research: grouping steps under functional milestones
+measurably improves transfer over a flat list.)
 
 *CRITICAL RULE — every step must include a =*Why:*= line.* A step
 that shows a command but not the mechanism it addresses is incomplete
@@ -218,10 +215,8 @@ seconds") or reaches for engaging-but-irrelevant color — history, trivia,
 an anecdote — to make the step more interesting. Both cost the reader
 time to parse without adding understanding, and the second actively pulls
 attention away from the mechanism that actually matters; a =*Why:*= that
-doesn't survive this test is worse than none. (See
-[[file:../../RESEARCH/re01-cognitive-load-in-walkthrough-design.md][RESEARCH/re01]]
-— this codifies its redundancy-effect and seductive-details-effect
-findings.)
+doesn't survive this test is worse than none. (Grounded in cognitive load
+research's redundancy-effect and seductive-details-effect findings.)
 
 *CRITICAL RULE — mark who runs each step.* Tag each item
 =*[you-run]*= or =*[agent-run]*=. Default to =*[you-run]*= for the
@@ -295,11 +290,10 @@ of making them parse the raw output cold.
   (=[[file:../<uuid>/walkthrough.org][...]]=).
 - *Decision:* entries capture a roadblock, pivot, or option genuinely
   weighed during the session that doesn't map to any single step's
-  =*Result:*= — the content a flat step-by-step record structurally loses
-  (see
-  [[file:../../RESEARCH/re02-design-rationale-capture-frameworks.md][RESEARCH/re02]]).
-  Format: facing <the issue>, considered <the real alternatives>, went
-  with <what was picked> because <why>, accepting <what that costs>. A
+  =*Result:*= — the content a flat step-by-step record structurally loses,
+  per design-rationale-capture research. Format: facing <the issue>,
+  considered <the real alternatives>, went with <what was picked> because
+  <why>, accepting <what that costs>. A
   sentence or two per decision — deliberately lighter than a full
   argument graph; see the CRITICAL RULE on capturing these live, in the
   External Session Workflow below.
@@ -528,8 +522,7 @@ reconstructs from memory during reconciliation. Human memory of *why* a
 choice was made reliably sanitizes itself once the outcome is already
 known, smoothing a messy real deliberation into a cleaner story than what
 actually happened — the post-hoc-rationalization failure mode documented
-in
-[[file:../../RESEARCH/re02-design-rationale-capture-frameworks.md][RESEARCH/re02]].
+in design-rationale-capture research.
 If the session-export didn't capture a decision, don't invent a tidy
 justification for it after the fact during reconciliation — note in Notes
 that the decision happened but its rationale wasn't captured, rather than
