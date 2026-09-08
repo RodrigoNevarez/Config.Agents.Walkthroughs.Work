@@ -103,6 +103,33 @@ Don't force every issue open today to be closed immediately. Filing a
 topic costs nothing; writing the full walkthrough is worth doing only
 when the problem is actually being worked through.
 
+* Handling a Pivot
+
+A project's own purpose sometimes changes mid-stream — a new requirement
+supersedes an old one, an approach gets abandoned, priorities get
+reshuffled. Treat that as an explicit checkpoint on =index.org= itself
+the moment it happens, not just a rule to remember while filing whatever
+issue comes next:
+
+1. *Review every open (=TODO=) node* against the new direction. One that
+   no longer matters gets pruned (Best Practice 3, below); one that
+   still matters but no longer belongs where it is gets reordered, not
+   left in place out of inertia.
+2. *Reorder the affected =TODO= nodes' =:STEP:=* to match the new
+   intended build sequence — see the =CRITICAL RULE=s under The Step
+   Property, above. Never touch a =DONE= node's =:STEP:= while doing
+   this; the pivot changes what's still ahead, not what already
+   happened.
+3. *File new issues the pivot introduces* the usual way (Best Practice
+   6, below): next unused =:STEP:=, then fold into step 2's reorder if
+   the new issue actually belongs earlier than the end of the queue.
+4. *Run the validator* once the dust settles, same as any other edit to
+   =index.org=.
+
+Skipping this checkpoint is how an index quietly goes stale — the
+=:STEP:= sequence keeps existing, but stops describing the order anyone
+actually intends to follow, which defeats its whole purpose.
+
 * Index Template
 
 #+BEGIN_SRC org
