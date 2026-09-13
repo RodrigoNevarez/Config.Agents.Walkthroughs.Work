@@ -39,7 +39,7 @@ or dropped in, byte for byte. Every file's =:ID:=, =:SOURCE:=, and
 =.agents/walkthroughs/CONTEXT/context_index.org=, one entry per file:
 
 #+begin_src org
-* <uuid>
+* <Short, semantic title — what this material actually is>
   :PROPERTIES:
   :ID:       <uuid>
   :SOURCE:   you
@@ -48,6 +48,12 @@ or dropped in, byte for byte. Every file's =:ID:=, =:SOURCE:=, and
   - *File:* [[file:<uuid>.<ext>][<uuid>.<ext>]]
   One or two sentences on what this material is.
 #+end_src
+
+The heading is a short, human-readable title, never the UUID itself — same
+"never in visible text" rule as every other node in this system
+(00-conventions.org's UUID Convention). The =:ID:= already gives the entry
+its permanent, linkable identity; the heading's only job is to let a human
+scanning =context_index.org= tell entries apart at a glance.
 
 - =:ID:= — the file's permanent id. Generated the same way as every other
   UUID in this system (see 00-conventions.org's UUID Convention:
@@ -147,6 +153,25 @@ entry that isn't =mined= yet — =proposed= entries waiting on your review,
 and =approved= entries cleared to mine but not yet used. Run it any time
 CONTEXT feels like it's accumulating faster than it's being worked
 through.
+
+* Mining a File
+
+Once you've said which parts of a CONTEXT file actually apply, the mining
+step itself is two things: (1) actually write the citation — a
+=[[file:...]]= link to the CONTEXT file — into whatever it's extending
+(an =index.org= issue description, or a walkthrough's own Problem/Why/Notes),
+along with whatever real content the research justifies, and (2) flip the
+entry's =:STATUS:= to =mined= once that citation exists.
+
+=SCRIPTS/context-mine.py <context-uuid> <citing-file>= automates step 2
+only — it refuses to run unless the citing file already contains a real
+=[[file:...]]= link to that UUID, then flips =:STATUS:= and re-runs the
+full validator. It deliberately does *not* write the citation or the
+mined content itself: deciding what the research actually justifies
+adding, and writing it well, stays exactly as much a human (or an
+agent working *with* the human) task as writing any other part of a
+walkthrough — this script only removes the repetitive bookkeeping around
+that decision, not the decision itself.
 
 * Best Practices
 

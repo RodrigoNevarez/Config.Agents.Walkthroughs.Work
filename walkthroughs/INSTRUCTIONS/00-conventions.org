@@ -1,5 +1,5 @@
 #+TITLE: Walkthrough Shared Conventions
-#+WALKTHROUGH_GUIDE_VERSION: 17
+#+WALKTHROUGH_GUIDE_VERSION: 20
 
 Single source of truth for conventions shared by
 [[file:01-index-guide.org][01-index-guide.org]] (the index),
@@ -68,17 +68,7 @@ is a separate system with its own validator checks, enforced
 unconditionally rather than version-gated — a wiki page doesn't declare a
 =#+WALKTHROUGH_GUIDE_VERSION:= line and isn't subject to this section's
 staleness warning. Introducing =05-wiki-guide.org= itself did not bump this
-version, for that reason. The same is true of
-[[file:08-context-guide.org][08-context-guide.org]]'s =.agents/walkthroughs/CONTEXT/=
-staging area: it's checked unconditionally by =validate_context()= in
-=SCRIPTS/validate-walkthroughs.py=, doesn't touch =walkthrough.org='s own
-required structure, and a CONTEXT file doesn't declare a
-=#+WALKTHROUGH_GUIDE_VERSION:= line either — introducing it did not bump
-this version, same reasoning as the wiki. (The UUID Convention's "one
-namespace" CRITICAL RULE, above, was extended to cover both =.agents/wikis/=
-and CONTEXT file entries when each was introduced — that rule is itself
-unconditional, not gated by this version number, which is why extending
-its scope didn't bump it either.)
+version, for that reason.
 
 Bump the number here whenever the required structure actually changes
 — a section added, removed, or renamed, or a new CRITICAL RULE that
@@ -92,6 +82,57 @@ failure, so staleness stays visible instead of silent.
 
 ** Changelog
 
+- *v20* (2026-09-13): New =SCRIPTS/context-mine.py=, documented in
+  [[file:08-context-guide.org][08-context-guide.org]]'s new "Mining a
+  File" section — automates only the bookkeeping half of mining a CONTEXT
+  file (flip =:STATUS:= to =mined=, re-run the validator), and refuses to
+  run at all unless the citing file already contains a real
+  =[[file:...]]= link to that CONTEXT uuid. Deciding what the research
+  justifies adding, and writing it, stays a human/agent judgment call the
+  script never touches — same split as every other tool in this system
+  (=validate-walkthroughs.py= checks structure, never content;
+  =context-status.py= reports status, never decides it). Requested
+  directly, to avoid repeating the same multi-step manual bookkeeping
+  every time a CONTEXT file gets mined.
+- *v19* (2026-09-13): Fixed a real inconsistency in
+  [[file:08-context-guide.org][08-context-guide.org]]'s own template,
+  found directly by the human reading it: a =context_index.org= entry's
+  heading was the raw UUID itself (=* <uuid>=), which flatly contradicts
+  this file's own pre-existing "never in visible text" CRITICAL RULE under
+  UUID Convention above — a rule that already applied to every linkable
+  node in this system before =08-context-guide.org= was ever written. The
+  template now uses a short, semantic title for the heading, with the
+  =:ID:= staying in the drawer exactly like everywhere else.
+  =SCRIPTS/validate-walkthroughs.py='s =validate_context()= gained a
+  matching mechanical check (reusing the same =UUID_ANY_RE= check
+  =validate_index()= already applies to index.org headings), and the one
+  existing =context_index.org= entry was migrated to a real title. Not a
+  new rule — a fix to bring a brand-new file into compliance with a rule
+  that predates it.
+- *v18* (2026-09-13): New file
+  [[file:08-context-guide.org][08-context-guide.org]] and
+  =.agents/walkthroughs/CONTEXT/=: a staging area for raw research material
+  on its way to becoming a filed =index.org= issue, distinct from the wiki
+  (settled knowledge) and from a walkthrough package (a solved problem's
+  write-up). Two trust levels, not conflated: material the human drops in
+  themselves (=SOURCE: you=) is auto-approved to mine directly, since
+  choosing to put it there already is the approval; material the agent goes
+  and finds on its own initiative (=SOURCE: agent=, modeled on Google
+  NotebookLM's Discover-Sources pattern) starts =STATUS: proposed= and a new
+  CRITICAL RULE — no filing without your go-ahead — blocks any issue from
+  citing it until the human says which parts actually apply. Metadata
+  (=:ID:=/=:SOURCE:=/=:STATUS:=) lives out-of-band in a sibling
+  =context_index.org=, never written into the raw file itself, so dropped-in
+  material stays byte-for-byte what was actually written or found — same
+  instinct as a SESH export never being converted to =.org= (v6, below).
+  =SCRIPTS/validate-walkthroughs.py= gained a matching =validate_context()=
+  check (valid =:ID:=/=:SOURCE:=/=:STATUS:=, a resolving =file:= link, no
+  orphaned CONTEXT file missing its entry), and a companion
+  =SCRIPTS/context-status.py= reports what's still =proposed= or =approved=
+  but not yet =mined=. This version bump and changelog entry were
+  specifically missing when the system was first introduced — added now as
+  routine self-consistency maintenance, the same discipline this file asks
+  of every other structural change.
 - *v17* (2026-09-12): New CRITICAL RULE in
   [[file:04-archive-guide.org][04-archive-guide.org]]'s Archive Workflow
   (new step 8): when archiving a package, also grep every *other*

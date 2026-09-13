@@ -485,6 +485,9 @@ def validate_context():
         loc = f"{CONTEXT_INDEX.relative_to(ROOT)}:{i + 1}"
         next_idx = next((h for h in heading_idxs if h > i), len(lines))
 
+        if UUID_ANY_RE.search(line):
+            fail(f"{loc}: heading text contains a raw UUID: '{line.strip()}'")
+
         entry_id = extract_drawer_id(lines, i + 1, next_idx)
         if not entry_id:
             fail(f"{loc}: entry has no :ID: drawer")
