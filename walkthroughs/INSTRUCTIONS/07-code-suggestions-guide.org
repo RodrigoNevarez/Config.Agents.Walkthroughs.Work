@@ -1,0 +1,99 @@
+#+TITLE: Walkthrough Code-Suggestion Guide
+
+This guide details how an agent authoring or working a walkthrough's
+=[you-run]= steps handles code: what it's allowed to write where, and what it
+must leave to the human. See [[file:02-expansion-guide.org][02-expansion-guide.org]]
+for the =[you-run]=/=[agent-run]= tagging convention this guide assumes, and
+[[file:00-conventions.org][00-conventions.org]] for the guide-version rules
+shared across this whole system.
+
+* Purpose
+
+[[file:02-expansion-guide.org][02-expansion-guide.org]]'s Purpose section is
+explicit that this system exists so "the solving builds the human's own
+understanding instead of leaving them dependent on the agent for the next
+similar problem." For a =[you-run]= step whose actual lesson is writing code
+— a C# method, a =docker-compose.yml= service, a config file — that means the
+agent must not simply author the file itself, even when it already knows
+exactly what the file should say. But refusing to discuss code at all in that
+situation is an overcorrection: a human working through a step still benefits
+from seeing a concrete example to react to, adapt, or diverge from, the same
+way a worked example helps in any other kind of learning. This guide draws
+the actual line between those two failure modes.
+
+* CRITICAL RULE — never write the real project file for a =[you-run]= coding step
+
+When a checklist step is tagged =*[you-run]*= and its lesson is writing
+implementation code, the agent never uses a file-writing tool to place that
+code into the actual project file the step is about (a =.cs= file, a
+=docker-compose.yml=, application or config source generally). This holds
+regardless of how confident the agent is in the correct answer, and
+regardless of whether the human seems to be struggling — the file is the
+human's own typing to do. This is unconditional on top of the general rule in
+[[file:02-expansion-guide.org][02-expansion-guide.org]]'s Teaching Contract
+that a =[you-run]= step is offered to the human rather than run silently; this
+guide extends the same principle from *running* the step to *authoring its
+code* in the first place.
+
+This does not apply to:
+- Writing the walkthrough system's own files — =walkthrough.org=,
+  =index.org=, wiki pages — including the suggested-code blocks described
+  below. Those are documentation about the project, not the project's own
+  implementation, and authoring them is unambiguously the agent's job.
+- A =*[agent-run]*= step, which by definition is mechanical scaffolding with
+  no learning value (installing a known package, starting a throwaway
+  container) — the agent executes these directly, same as always.
+
+* CRITICAL RULE — suggest code inline, in the walkthrough file, not just in chat
+
+Every new walkthrough's =[you-run]= step whose lesson is writing code should
+include a labeled suggestion, written directly into that step in
+=walkthrough.org=:
+
+#+begin_src org
+*Suggested starting point (adapt as needed, don't just paste it in
+unread — type it yourself and understand each line)*:
+#+begin_src <language>
+<suggested code>
+#+end_src
+<a sentence or two calling out anything non-obvious in the suggestion —
+a gotcha, an API detail, a reason it's shaped the way it is>
+#+end_src
+
+Putting the suggestion in the file itself, not only in a chat reply, is
+deliberate: a chat message scrolls away and isn't there for a future session
+(this agent's or an external one, per
+[[file:02-expansion-guide.org][02-expansion-guide.org]]'s External Session
+Workflow) to build on. The label itself matters as much as the content — it
+must read as a starting point to adapt, not as a finished answer to copy. A
+bare, unlabeled code block invites exactly the copy-paste-and-move-on
+behavior this whole system exists to avoid.
+
+*This is opt-in the way the rest of a =[you-run]= step's depth is* — a step
+whose lesson isn't really about the code shape (e.g. "run this diagnostic
+query and read its output") doesn't need an invented suggestion just to have
+one. Reserve it for steps where seeing a concrete example genuinely helps
+someone who hasn't written this exact pattern before.
+
+* Suggestions Are Not Evidence
+
+A suggested-code block never substitutes for a =*Result:*= block. Per
+[[file:02-expansion-guide.org][02-expansion-guide.org]]'s Guide section, a
+checked (=[X]=) step still requires its own real, verified output — the
+human's actual code, actually run, with actual output pasted in. A suggestion
+sitting in the step body when it's still unchecked is exactly the expected,
+normal state; it becoming a =*Result:*= without the human ever having typed
+or run anything would be the same failure this system's evidentiary standard
+already exists to catch everywhere else.
+
+* Retrofitting Existing Walkthroughs
+
+This guide's rules are the default for every walkthrough written from here
+on. An already-authored walkthrough whose =[you-run]= steps say "no code
+given here on purpose" isn't automatically wrong — that phrasing predates
+this guide and reflected a reasonable, if overcorrected, reading of the same
+underlying goal. Retrofit an existing package's steps with suggested-code
+blocks when actually asked to, not automatically on sight; this mirrors how
+[[file:00-conventions.org][00-conventions.org]]'s own Guide Version section
+treats a guide-version bump as a signal a package *may* be missing something,
+not a requirement to immediately go update every existing package.

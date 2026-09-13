@@ -92,7 +92,27 @@ other walkthrough.
    =file:<uuid>/walkthrough.org= to =file:archive/<uuid>.org= — the =DONE=
    state itself doesn't change, only the link target.
 
-8. Run the validator.
+8. *CRITICAL RULE — check every other archived file for links pointing at
+   this package's pre-archive path.* Any earlier-archived walkthrough that
+   ever cited this one as an active package (=file:../<uuid>/walkthrough.org=)
+   now has a dangling link, since this package just moved to
+   =archive/<uuid>.org=. This is not the "never rewritten" rule being
+   violated — updating a =file:= link's *path* to follow where something
+   moved is exactly what step 7 above already does for =index.org= itself;
+   an already-archived file's own prose, decisions, and =*Result:*= blocks
+   still never change, only a stale address. Grep the whole archive
+   directory, not just the package being archived:
+   #+begin_src sh
+   grep -rln "<uuid>/walkthrough.org" .agents/walkthroughs/archive/
+   #+end_src
+   For each hit, update only the path
+   (=../<uuid>/walkthrough.org= → =../archive/<uuid>.org=), nothing else.
+   Found by hitting this exact case: archiving the seed-data tool
+   walkthrough broke a citation inside the already-archived =.NET SDK=
+   walkthrough, which =validate-walkthroughs.py='s unconditional
+   link-integrity check caught as a hard failure immediately.
+
+9. Run the validator.
 
 * What the Validator Checks
 

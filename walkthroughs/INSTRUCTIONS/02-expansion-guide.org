@@ -225,7 +225,10 @@ config edit, the fix itself); reserve =*[agent-run]*= for mechanical
 scaffolding the human gets nothing from doing by hand (e.g. installing
 a known dependency, or a pure verification step with no new mechanism
 to learn). When in doubt, prefer =*[you-run]*= — the bias this guide
-exists to create is toward the human doing more, not less.
+exists to create is toward the human doing more, not less. See
+[[file:07-code-suggestions-guide.org][07-code-suggestions-guide.org]] for how
+to handle a =[you-run]= step whose lesson is writing code — suggest it inline
+in this file, never write it into the actual project file.
 
 *CRITICAL RULE — every step gets an =:ID:= too*, generated the same
 way and placed the same way as described in

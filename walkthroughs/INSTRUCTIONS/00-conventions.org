@@ -1,15 +1,17 @@
 #+TITLE: Walkthrough Shared Conventions
-#+WALKTHROUGH_GUIDE_VERSION: 15
+#+WALKTHROUGH_GUIDE_VERSION: 17
 
 Single source of truth for conventions shared by
 [[file:01-index-guide.org][01-index-guide.org]] (the index),
 [[file:02-expansion-guide.org][02-expansion-guide.org]] (walkthrough
 packages), [[file:04-archive-guide.org][04-archive-guide.org]]
-(archiving a settled package), and [[file:05-wiki-guide.org][05-wiki-guide.org]]
-(the project wiki at =.agents/wikis/=). All four reference this file instead of
-restating it — a rule here changes in exactly one place, not several that can
-drift apart. Checked mechanically by =SCRIPTS/validate-walkthroughs.py=
-(walkthroughs, index, and wiki).
+(archiving a settled package), [[file:05-wiki-guide.org][05-wiki-guide.org]]
+(the project wiki at =.agents/wikis/=), and
+[[file:07-code-suggestions-guide.org][07-code-suggestions-guide.org]]
+(suggesting code inside a =[you-run]= step without writing it into the repo).
+All five reference this file instead of restating it — a rule here changes in
+exactly one place, not several that can drift apart. Checked mechanically by
+=SCRIPTS/validate-walkthroughs.py= (walkthroughs, index, and wiki).
 
 * UUID Convention
 
@@ -76,6 +78,45 @@ failure, so staleness stays visible instead of silent.
 
 ** Changelog
 
+- *v17* (2026-09-12): New CRITICAL RULE in
+  [[file:04-archive-guide.org][04-archive-guide.org]]'s Archive Workflow
+  (new step 8): when archiving a package, also grep every *other*
+  already-archived file for links pointing at this package's pre-archive
+  path (=<uuid>/walkthrough.org=), and update just the path to
+  =archive/<uuid>.org=. This isn't the "never rewritten" rule being
+  violated — a link's address following where its target moved is the
+  same kind of update step 7 already makes to =index.org=; the archived
+  file's own prose/decisions/=*Result:*= blocks stay untouched. Found by
+  hitting this exact case directly: archiving the seed-data tool
+  walkthrough broke a citation inside the already-archived =.NET SDK=
+  walkthrough, caught immediately as a hard failure by
+  =validate-walkthroughs.py='s existing unconditional link-integrity
+  check — no validator change needed, the check already covered archived
+  files, this was a gap in the *workflow* that hadn't hit this ordering
+  before.
+- *v16* (2026-09-11): New file
+  [[file:07-code-suggestions-guide.org][07-code-suggestions-guide.org]] and a
+  matching CRITICAL RULE it defines: a =[you-run]= step whose lesson is
+  writing implementation code must include an inline, clearly-labeled
+  "Suggested starting point" code block in =walkthrough.org= itself, but the
+  agent authoring or working the walkthrough must never use Write/Edit to put
+  that code into the actual project file (=Program.cs=, =docker-compose.yml=,
+  etc.) — that stays the human's own typing regardless of how confident the
+  agent is in the answer. Requested directly, across a real sequence in one
+  project's walkthroughs: the agent first wrote a complete C# console tool
+  straight into the repo unprompted (immediately reverted — "Do not write the
+  tool for me, i want to learn too"), then a docker-compose walkthrough was
+  authored with zero inline code at all to avoid repeating that mistake, then
+  the human clarified the actual boundary was narrower than that overcorrection
+  — "You are able to suggest code, just dont write it into the repo, thats my
+  job" — and asked for the suggestion to live in the walkthrough file, not just
+  chat, before generalizing it to every future walkthrough. Distinct from a
+  =*Result:*= block (reserved for real, verified output once a step is
+  actually checked) and from a =[agent-run]= step (mechanical scaffolding the
+  agent still executes directly). Prose-only, like v10-v12 — not separately
+  mechanically validated, since the validator has no way to judge whether a
+  given =[you-run]= step's lesson is "writing code" at all, let alone whether
+  a suggestion block is adequately labeled.
 - *v15* (2026-09-04): Applied findings from internal design-rationale-
   capture research (IBIS/QOC/ADR lineage) to
   [[file:02-expansion-guide.org][02-expansion-guide.org]]'s External
