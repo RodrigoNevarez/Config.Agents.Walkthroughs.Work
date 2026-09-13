@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Validate .agents/walkthroughs/ (and .agents/wikis/) against the rules in
 INSTRUCTIONS/00-conventions.org, 01-index-guide.org, 02-expansion-guide.org,
-04-archive-guide.org, and 05-wiki-guide.org. Exits non-zero if any check
-fails.
+04-archive-guide.org, 05-wiki-guide.org, and 08-context-guide.org. Exits
+non-zero if any check fails.
 
 Usage: .agents/walkthroughs/SCRIPTS/validate-walkthroughs.py
 """
@@ -18,7 +18,11 @@ CONVENTIONS = WT_DIR / "INSTRUCTIONS" / "00-conventions.org"
 ARCHIVE_DIR = WT_DIR / "archive"
 WIKIS_DIR = WT_DIR.parent / "wikis"
 WIKI_META_FILES = {"index.org", "CHANGELOG.org"}
-SKIP_DIRS = {"INSTRUCTIONS", "SCRIPTS", "archive"}
+CONTEXT_DIR = WT_DIR / "CONTEXT"
+CONTEXT_INDEX = CONTEXT_DIR / "context_index.org"
+SKIP_DIRS = {"INSTRUCTIONS", "SCRIPTS", "archive", "CONTEXT"}
+CONTEXT_VALID_SOURCES = {"you", "agent"}
+CONTEXT_VALID_STATUSES = {"proposed", "approved", "mined"}
 
 UUID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I
@@ -92,6 +96,26 @@ def extract_drawer_step(lines, start, stop):
         if in_drawer and re.match(r"^:STEP:\s*", s, re.I):
             step_val = re.sub(r"^:STEP:\s*", "", s, flags=re.I).strip()
     return step_val
+
+
+def extract_drawer_field(lines, start, stop, field):
+    """First :<field>: value inside a :PROPERTIES:...:END: drawer in
+    lines[start:stop]. Generic version of extract_drawer_id/_step, used
+    for context_index.org's :SOURCE:/:STATUS: fields."""
+    in_drawer = False
+    val = None
+    pattern = re.compile(rf"^:{re.escape(field)}:\s*", re.I)
+    for line in lines[start:stop]:
+        s = line.strip()
+        if s == ":PROPERTIES:":
+            in_drawer = True
+            continue
+        if s == ":END:":
+            in_drawer = False
+            continue
+        if in_drawer and pattern.match(s):
+            val = pattern.sub("", s).strip()
+    return val
 
 
 seen_steps = {}  # int -> first location string, index.org's own :STEP: sequence
@@ -442,6 +466,62 @@ def validate_wikis():
             validate_no_dangling_file_links(meta_path, meta_path.read_text())
 
 
+def validate_context():
+    """See INSTRUCTIONS/08-context-guide.org."""
+    if not CONTEXT_DIR.is_dir():
+        return
+    if not CONTEXT_INDEX.exists():
+        fail(f"{CONTEXT_DIR.relative_to(ROOT)}: missing context_index.org")
+        return
+
+    text = CONTEXT_INDEX.read_text()
+    lines = text.splitlines()
+    heading_idxs = [i for i, l in enumerate(lines) if re.match(r"^\*+\s", l)]
+
+    indexed_files = set()
+    for i, line in enumerate(lines):
+        if not re.match(r"^\*\s+\S", line):
+            continue
+        loc = f"{CONTEXT_INDEX.relative_to(ROOT)}:{i + 1}"
+        next_idx = next((h for h in heading_idxs if h > i), len(lines))
+
+        entry_id = extract_drawer_id(lines, i + 1, next_idx)
+        if not entry_id:
+            fail(f"{loc}: entry has no :ID: drawer")
+            continue
+        register_uuid(entry_id, loc)
+
+        source_val = extract_drawer_field(lines, i + 1, next_idx, "SOURCE")
+        if source_val not in CONTEXT_VALID_SOURCES:
+            fail(f"{loc}: ':SOURCE:' value '{source_val}' must be one of "
+                 f"{sorted(CONTEXT_VALID_SOURCES)}")
+
+        status_val = extract_drawer_field(lines, i + 1, next_idx, "STATUS")
+        if status_val not in CONTEXT_VALID_STATUSES:
+            fail(f"{loc}: ':STATUS:' value '{status_val}' must be one of "
+                 f"{sorted(CONTEXT_VALID_STATUSES)}")
+        if source_val == "you" and status_val == "proposed":
+            fail(f"{loc}: 'SOURCE: you' entries are auto-approved and can "
+                 f"never be 'STATUS: proposed'")
+
+        m = FILE_LINK_RE.search("\n".join(lines[i + 1:next_idx]))
+        if not m:
+            fail(f"{loc}: entry has no 'file:' link to its actual CONTEXT file")
+        else:
+            target = (CONTEXT_DIR / m.group(1).split("::", 1)[0]).resolve()
+            if not target.exists():
+                fail(f"{loc}: 'file:' link target does not exist: {m.group(1)}")
+            else:
+                indexed_files.add(target)
+
+    for p in CONTEXT_DIR.iterdir():
+        if not p.is_file() or p.name == "context_index.org" or p.resolve() in indexed_files:
+            continue
+        fail(f"{p.relative_to(ROOT)}: file is not listed in context_index.org")
+
+    validate_no_dangling_file_links(CONTEXT_INDEX, text)
+
+
 def main():
     current_version = current_guide_version()
     node_ids = validate_index()
@@ -471,6 +551,7 @@ def main():
         validate_no_dangling_file_links(arc_file, arc_file.read_text())
 
     validate_wikis()
+    validate_context()
 
     for w in warnings:
         print(f"WARN: {w}")

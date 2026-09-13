@@ -1,0 +1,4 @@
+#+TITLE: Walkthroughs Index
+#+DESCRIPTION: Central index of problem-solving walkthroughs — teaching artifacts, not fix logs.
+#+OPTIONS: toc:nil num:nil
+

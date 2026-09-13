@@ -7,10 +7,12 @@ real problem was solved, written so the solving builds the human's own
 understanding instead of leaving them dependent on the agent for the
 next similar problem. See
 [[file:02-expansion-guide.org][02-expansion-guide.org]] for how an
-individual topic gets expanded into a full walkthrough package, and
-[[file:00-conventions.org][00-conventions.org]] for the issue-tracker
-mental model and UUID rules both guides share — this file only covers
-what's specific to =index.org= itself.
+individual topic gets expanded into a full walkthrough package,
+[[file:08-context-guide.org][08-context-guide.org]] for how raw research
+material in =.agents/walkthroughs/CONTEXT/= becomes a filed issue here in
+the first place, and [[file:00-conventions.org][00-conventions.org]] for
+the issue-tracker mental model and UUID rules both guides share — this
+file only covers what's specific to =index.org= itself.
 
 Walkthroughs are not scoped to any one project or repository's setup
 — a topic can be anything worth documenting this way. =index.org= is

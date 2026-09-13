@@ -6,11 +6,13 @@ Single source of truth for conventions shared by
 [[file:02-expansion-guide.org][02-expansion-guide.org]] (walkthrough
 packages), [[file:04-archive-guide.org][04-archive-guide.org]]
 (archiving a settled package), [[file:05-wiki-guide.org][05-wiki-guide.org]]
-(the project wiki at =.agents/wikis/=), and
+(the project wiki at =.agents/wikis/=),
 [[file:07-code-suggestions-guide.org][07-code-suggestions-guide.org]]
-(suggesting code inside a =[you-run]= step without writing it into the repo).
-All five reference this file instead of restating it — a rule here changes in
-exactly one place, not several that can drift apart. Checked mechanically by
+(suggesting code inside a =[you-run]= step without writing it into the repo),
+and [[file:08-context-guide.org][08-context-guide.org]] (the research
+staging area at =.agents/walkthroughs/CONTEXT/=). All six reference this
+file instead of restating it — a rule here changes in exactly one place,
+not several that can drift apart. Checked mechanically by
 =SCRIPTS/validate-walkthroughs.py= (walkthroughs, index, and wiki).
 
 * UUID Convention
@@ -35,10 +37,12 @@ step — gets a permanent =:ID:= via a =:PROPERTIES:= drawer:
   human-readable.
 - *CRITICAL RULE — one namespace.* Every UUID under
   =.agents/walkthroughs/= *or* =.agents/wikis/= — index nodes, package
-  directory names, individual walkthrough steps, and wiki pages (see
-  [[file:05-wiki-guide.org][05-wiki-guide.org]]'s UUID Placement) — must be
-  globally unique across both trees, not just within one file. Run
-  =SCRIPTS/validate-walkthroughs.py= to check.
+  directory names, individual walkthrough steps, wiki pages (see
+  [[file:05-wiki-guide.org][05-wiki-guide.org]]'s UUID Placement), and
+  CONTEXT file entries (see
+  [[file:08-context-guide.org][08-context-guide.org]]'s Naming &
+  Lifecycle) — must be globally unique across both trees, not just within
+  one file. Run =SCRIPTS/validate-walkthroughs.py= to check.
 
 * Issue-Tracker Mental Model
 
@@ -64,7 +68,17 @@ is a separate system with its own validator checks, enforced
 unconditionally rather than version-gated — a wiki page doesn't declare a
 =#+WALKTHROUGH_GUIDE_VERSION:= line and isn't subject to this section's
 staleness warning. Introducing =05-wiki-guide.org= itself did not bump this
-version, for that reason.
+version, for that reason. The same is true of
+[[file:08-context-guide.org][08-context-guide.org]]'s =.agents/walkthroughs/CONTEXT/=
+staging area: it's checked unconditionally by =validate_context()= in
+=SCRIPTS/validate-walkthroughs.py=, doesn't touch =walkthrough.org='s own
+required structure, and a CONTEXT file doesn't declare a
+=#+WALKTHROUGH_GUIDE_VERSION:= line either — introducing it did not bump
+this version, same reasoning as the wiki. (The UUID Convention's "one
+namespace" CRITICAL RULE, above, was extended to cover both =.agents/wikis/=
+and CONTEXT file entries when each was introduced — that rule is itself
+unconditional, not gated by this version number, which is why extending
+its scope didn't bump it either.)
 
 Bump the number here whenever the required structure actually changes
 — a section added, removed, or renamed, or a new CRITICAL RULE that

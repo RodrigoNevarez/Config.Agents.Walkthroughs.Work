@@ -1,0 +1,168 @@
+#+TITLE: Walkthroughs CONTEXT Directory Guide
+
+This guide details how =.agents/walkthroughs/CONTEXT/= is used: a
+staging area for raw research material that later becomes filed issues
+in [[file:../index.org][index.org]]. See
+[[file:00-conventions.org][00-conventions.org]] for conventions shared
+across this whole system, and
+[[file:01-index-guide.org][01-index-guide.org]] for how a CONTEXT file's
+material actually turns into a Level 3 issue.
+
+CONTEXT is not the wiki ([[file:05-wiki-guide.org][05-wiki-guide.org]]).
+The wiki holds durable, settled knowledge; CONTEXT holds raw, unsorted
+material on its way to becoming something else — an issue, and later a
+walkthrough. A CONTEXT file that never produces anything should not
+linger indefinitely (see Naming & Lifecycle, below).
+
+* Two Directions
+
+Material reaches CONTEXT from two directions that carry different trust
+levels, and must not be conflated:
+
+- *You → agent (user-sourced).* You write or paste something yourself —
+  your own reflection, an article you found, a report you generated
+  elsewhere. Choosing to put it in CONTEXT is itself your approval; the
+  agent can mine it directly into filed issues.
+- *Agent → you (agent-sourced).* The agent goes looking for material on
+  its own initiative — a Discover-Sources-style web research step,
+  modeled on how Google NotebookLM proposes sources for you to accept
+  rather than adding them unasked. The agent has not verified any of it
+  actually fits your situation, so it carries a lower trust level until
+  you say otherwise.
+
+* The Context Index
+
+*CRITICAL RULE — CONTEXT files are never edited to carry their own
+metadata.* A CONTEXT file is raw material — it stays exactly as written
+or dropped in, byte for byte. Every file's =:ID:=, =:SOURCE:=, and
+=:STATUS:= live instead in a single sibling file,
+=.agents/walkthroughs/CONTEXT/context_index.org=, one entry per file:
+
+#+begin_src org
+* <uuid>
+  :PROPERTIES:
+  :ID:       <uuid>
+  :SOURCE:   you
+  :STATUS:   approved
+  :END:
+  - *File:* [[file:<uuid>.<ext>][<uuid>.<ext>]]
+  One or two sentences on what this material is.
+#+end_src
+
+- =:ID:= — the file's permanent id. Generated the same way as every other
+  UUID in this system (see 00-conventions.org's UUID Convention:
+  =uuidgen=, never hand-typed) and, per Naming & Lifecycle below, is also
+  the file's own filename.
+- =:SOURCE:= — =you= or =agent=, per Two Directions above.
+- =:STATUS:= — one of three values, tracking where the file sits between
+  arriving and being used:
+  - =proposed= — agent-sourced, found, not yet reviewed by you. *Never*
+    valid on a =SOURCE: you= entry — putting a file in CONTEXT yourself
+    already is the approval, so a user-sourced entry starts at =approved=
+    and skips =proposed= entirely.
+  - =approved= — cleared to mine, not yet cited by any filed issue. The
+    starting state for every =SOURCE: you= entry; the state an
+    agent-sourced entry reaches once you've said which parts land.
+  - =mined= — at least one filed issue in =index.org= now cites this
+    file.
+
+*CRITICAL RULE — no filing without your go-ahead.* An issue must never
+cite a =STATUS: proposed= file. When the agent brings in research on its
+own initiative, it presents the findings and stops — nothing gets filed
+until you say which parts actually apply. This is the gate that makes
+agent-initiated research safe to use at all: the agent can find
+generically-good material, but only you know what actually fits your
+situation. A =SOURCE: you= entry has no such gate, since it starts at
+=approved= already.
+
+* Naming & Lifecycle
+
+*CRITICAL RULE — generic UUID filenames, generate never invent.* Every
+CONTEXT file is named =<uuid>.<original-ext>= — the same UUID as its
+=context_index.org= entry's =:ID:=, produced with =uuidgen= (or the
+Python fallback in 00-conventions.org's UUID Convention), never
+hand-typed. The extension stays whatever the material actually arrived
+in (=.md=, =.txt=, =.org=, ...) — same reasoning as a SESH export never
+being converted to =.org= (00-conventions.org changelog, v6): the file is
+raw evidence, not a package artifact. A generic filename plus the
+descriptive sentence in the index entry keeps the file itself
+uninformative on its own, exactly like a walkthrough package directory
+being a UUID rather than a slug.
+
+This UUID shares the *same global namespace* as every other UUID in this
+system — an index node, a walkthrough step, a wiki page. See
+00-conventions.org's UUID Convention, "one namespace" rule.
+
+A CONTEXT file that ends up cited by a filed issue (=STATUS: mined=)
+stays — link integrity depends on it. An entry that never produces
+anything — declined during approval, or user-sourced material that never
+turned into an issue — should have its file deleted and its
+=context_index.org= entry removed, rather than left to accumulate. Same
+instinct as [[file:01-index-guide.org][01-index-guide.org]]'s Best
+Practice 3 (prune stale open issues).
+
+* Workflow: Agent-Sourced Research
+
+1. Search the web for real, current sources on the topic — do not rely
+   on training-data recall dressed up as "research." Same principle as
+   the UUID Convention's "generate, never invent" rule, applied to claims
+   instead of identifiers.
+2. Curate a small, focused set (not a link dump) into one CONTEXT file,
+   named with a freshly generated UUID, with a one-line "why this is
+   relevant" note per source — mirroring NotebookLM's Discover Sources
+   annotations.
+3. Add its =context_index.org= entry: =:SOURCE: agent=, =:STATUS:
+   proposed=.
+4. Present the findings in conversation and stop. Do not create any
+   issue in =index.org= that cites this file yet (see the CRITICAL RULE
+   under The Context Index).
+5. Once you've responded, flip the entry to =STATUS: approved= and file
+   issues only for the parts you confirmed. After at least one issue
+   cites the file, flip it to =STATUS: mined=.
+
+* Workflow: User-Sourced Material
+
+You drop a file in CONTEXT yourself; the agent generates its UUID
+filename and adds a =context_index.org= entry with =:SOURCE: you=,
+=:STATUS: approved= — no approval gate, since putting it there already is
+your approval. The agent mines it directly into filed issues the same way
+any approved CONTEXT file does — see The Context Index, above, for the
+=STATUS: mined= transition once at least one filed issue cites it.
+
+*CRITICAL RULE — grounding applies to both directions.* Every issue
+description that states a claim drawn from research must trace back to
+something actually written in a specific CONTEXT file — never
+extrapolated from the agent's general knowledge and never presented as
+specific to your situation when the source is generic background
+material. This extends the same "don't trust the
+file's own claims uncritically" discipline
+[[file:02-expansion-guide.org][02-expansion-guide.org]]'s =For AI
+Assistants= section already requires when *reading* a walkthrough, to
+*writing* an issue from CONTEXT material in the first place.
+
+* Checking Pending Files
+
+=SCRIPTS/context-status.py= reads =context_index.org= and reports every
+entry that isn't =mined= yet — =proposed= entries waiting on your review,
+and =approved= entries cleared to mine but not yet used. Run it any time
+CONTEXT feels like it's accumulating faster than it's being worked
+through.
+
+* Best Practices
+
+1. One CONTEXT file, one scoped topic — don't let a single file answer
+   more than one question, the same "a good notebook has a job
+   description" principle NotebookLM's own guidance uses.
+2. Prefer several small, focused files over one sprawling document; each
+   is easier to cite precisely and easier to retire once mined.
+3. When an issue's description draws on a CONTEXT file, mention which
+   file in the issue body (a relative =[[file:...]]= link) so the
+   citation is checkable, not just asserted.
+4. Never let a =STATUS: proposed= entry sit forever unresolved — either
+   review it and flip its status, or delete it and its entry if it turned
+   out not to be worth pursuing. =SCRIPTS/context-status.py= is what
+   surfaces these.
+5. Run =SCRIPTS/validate-walkthroughs.py= after editing
+   =context_index.org= — it checks every entry has a valid, globally
+   unique =:ID:=, a valid =:SOURCE:=/=:STATUS:=, a =file:= link that
+   resolves, and that no real CONTEXT file is missing its entry.
