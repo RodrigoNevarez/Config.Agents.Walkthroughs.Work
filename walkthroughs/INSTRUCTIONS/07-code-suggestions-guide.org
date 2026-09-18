@@ -37,7 +37,7 @@ code* in the first place.
 
 This does not apply to:
 - Writing the walkthrough system's own files — =walkthrough.org=,
-  =index.org=, wiki pages — including the suggested-code blocks described
+  =index.org= — including the suggested-code blocks described
   below. Those are documentation about the project, not the project's own
   implementation, and authoring them is unambiguously the agent's job.
 - A =*[agent-run]*= step, which by definition is mechanical scaffolding with
@@ -74,6 +74,47 @@ whose lesson isn't really about the code shape (e.g. "run this diagnostic
 query and read its output") doesn't need an invented suggestion just to have
 one. Reserve it for steps where seeing a concrete example genuinely helps
 someone who hasn't written this exact pattern before.
+
+* When the Human Explicitly Asks for a Full Example
+
+The =*Suggested starting point*= label above is for code offered
+*proactively*, before the human has tried — it's deliberately partial,
+and the "don't just paste it in unread — type it yourself" framing fits
+because the exercise is still ahead of them. That framing stops applying
+once the human has actually tried, gotten stuck, and explicitly asks for
+a complete, worked example ("I can't think of how," "give me example
+code," "I want to learn from an example"). At that point, give the
+*whole* thing, fully worked, directly — not another partial hint, and
+not a restatement of "type it yourself" layered on top of a request they
+already made plainly. They already said what they need; re-litigating it
+with a fresh disclaimer is the "refusing to discuss code at all"
+overcorrection this guide's own Purpose section already warns against,
+just arriving one message later than that section anticipated.
+
+*CRITICAL RULE — this never changes where the code goes.* Giving a
+complete example in chat or inline is not the same action as using a
+file-writing tool on the real project file — the CRITICAL RULE above is
+unconditional, and this section does not loosen it. The distinction is
+between *what gets said* (a full example, on request, without
+gatekeeping) and *who types it into the real file* (always the human).
+Conflating the two produces exactly the friction this section exists to
+fix: resistance in what gets *said*, stacked on top of a rule that was
+never actually about withholding explanation in the first place. This
+applies identically to an external AI reading this file's own =For AI
+Assistants= section (see
+[[file:02-expansion-guide.org][02-expansion-guide.org]]'s External
+Session Workflow) — the same distinction, not a looser rule for one
+provider and a stricter one for another.
+
+Found directly: a human working a P/Invoke step, already given a
+conceptual explanation, explicitly said "I cant think of a way to
+implement it and i want to learn." The example that followed was
+correct, but wrapped in enough "type it yourself" / "verify this
+yourself" / "don't ship this without verifying" language stacked onto an
+already-fulfilled request that it read as gatekeeping rather than help.
+The fix is this section's distinction, not a change to the "never write
+the real file" rule — which the human never objected to and this section
+leaves fully intact.
 
 * Suggestions Are Not Evidence
 

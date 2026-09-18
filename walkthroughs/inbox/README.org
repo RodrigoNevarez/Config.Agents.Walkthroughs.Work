@@ -1,0 +1,15 @@
+#+TITLE: Inbox
+
+This directory is not vault state — it holds nothing durable of its own.
+It exists only as a staging area for material you've researched or
+collected yourself, waiting to be ingested. See
+[[file:../INSTRUCTIONS/10-ingestion-guide.org][10-ingestion-guide.org]]
+for the full workflow.
+
+Drop a file here (any format — =.md=, =.org=, =.txt=, a PDF, a
+screenshot, a =.docx=/=.pptx=/=.xlsx=) and ask for it to be ingested.
+Once ingested, the file is deleted — its content now lives properly
+filed as CONTEXT research (and, if it justified one, a new =index.org=
+issue) instead. This directory is expected to be empty between
+ingestion passes; this =README.org= is the only file that's supposed to
+stay.

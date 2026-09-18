@@ -51,10 +51,9 @@ other walkthrough.
    in [[file:02-expansion-guide.org][02-expansion-guide.org]]) holds
    content that was deliberately *never* duplicated inline — unlike a SESH
    export, there's no reconciled copy elsewhere to fall back on. Before
-   archiving a package that has one: either inline its content into the
-   corresponding step (as a =*Detail (archived inline):*= block) or
-   promote it to the wiki and link out, per the Notes concept-promotion
-   flag. Never silently delete a step-detail file.
+   archiving a package that has one, inline its content into the
+   corresponding step (as a =*Detail (archived inline):*= block). Never
+   silently delete a step-detail file.
 
 4. *CRITICAL RULE — remove every link that points at a file you're about
    to delete.* Reconciling a SESH file's *content* (rule 2, above) is not

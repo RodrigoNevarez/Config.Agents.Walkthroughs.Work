@@ -1,0 +1,172 @@
+#+TITLE: Inbox Ingestion Guide
+
+This guide details how =.agents/walkthroughs/inbox/= is used, and is
+deliberately separate from [[file:08-context-guide.org][08-context-guide.org]]
+rather than a section inside it. The two research pathways are related
+but genuinely different in kind, not just in wording:
+
+- *Agent-sourced CONTEXT research* (08-context-guide.org) is the agent
+  going looking for material on its own initiative — lower trust,
+  =STATUS: proposed=, blocked from citation until you explicitly say
+  which parts apply.
+- *Ingested material* (this guide) is research *you* already did
+  yourself, outside this conversation — a document, a photo of notes, an
+  article — handed over via a staging directory instead of pasted
+  directly into chat. It carries the same trust as anything you say
+  directly: auto-approved, no review gate, per
+  [[file:08-context-guide.org][08-context-guide.org]]'s own =SOURCE: you=
+  rule ("putting it there already is your approval").
+
+Both pathways still write into the same place — a filed issue's
+=CONTEXT/<issue-uuid>/= subdirectory, per 08-context-guide.org's Naming &
+Lifecycle rules, which this guide assumes and does not restate.
+
+* Purpose
+
+You do real research outside this conversation — reading, watching,
+working through material on your own — and don't want turning that into
+properly-filed study material to be its own chore. This guide exists so
+handing over what you found is as simple as dropping a file and asking
+for it to be ingested, with the actual filing work (which issue it
+belongs to, whether it needs a new one, writing the CONTEXT entry) done
+for you — the same instinct behind every other piece of this system that
+exists to remove clerical friction from your actual learning.
+
+* CRITICAL RULE — ingestion is explicitly triggered, never autonomous
+
+Unlike a pure background-capture agent, nothing in =inbox/= gets touched
+until you actually ask for it to be ingested. The agent does not watch
+the directory, does not process a file the moment it appears, and does
+not treat a file sitting in =inbox/= as implicit permission to act on it
+whenever convenient. This is a deliberate difference from the workflow
+this guide is modeled on: everywhere else in this system, nothing gets
+filed without an explicit trigger from you, and ingestion is not an
+exception just because the trigger is "drop a file" instead of "say the
+words."
+
+* What Belongs in inbox/
+
+Anything you've researched or collected yourself that hasn't been
+pasted directly into this conversation: notes, an article, a PDF, a
+photo of a whiteboard or textbook page, a =.docx=/=.pptx=/=.xlsx= file,
+or plain =.org=/=.md=/=.txt=. =inbox/= is not vault state — nothing in
+it has a permanent identity, and it is expected to be empty between
+ingestion passes (see =inbox/README.org=).
+
+** Format handling
+
+Before anything else in this guide applies, inbox material has to become
+text (or something the agent can otherwise reason over) first:
+
+- =.org=, =.md=, =.txt= — read directly.
+- PDFs — extract text (and tables, where present) via this environment's
+  PDF skill first.
+- Photos and screenshots (whiteboards, handwritten notes, textbook
+  pages) — read directly as an image; native image understanding stands
+  in for retyping it.
+- =.docx=/=.pptx=/=.xlsx= — extract via this environment's corresponding
+  document skill first.
+
+Once extracted, the same issue-mapping, filing, and CONTEXT-writing
+rules below apply regardless of what format the material started in.
+
+* Ingestion Workflow
+
+Triggered by you, e.g. "ingest the inbox" or "ingest =<filename>=."
+Process files **one at a time, never as a single all-or-nothing
+batch** — a problem with one file must never block or affect the
+others:
+
+1. Read and fully extract one file (per Format Handling, above).
+2. Decide which issue the material belongs to:
+   - An **existing** =index.org= node — proceed straight to writing the
+     CONTEXT entry (step 3).
+   - **No existing node fits** — the material justifies work that isn't
+     filed yet. File a new =TODO= node in =index.org= first, per
+     [[file:01-index-guide.org][01-index-guide.org]], *then* proceed to
+     step 3 for the new issue. Filing directly, without a separate
+     approval step, is consistent with =SOURCE: you='s existing
+     auto-approval — this is your own research, not the agent
+     proposing new scope on its own initiative.
+3. Write the actual research content into that issue's
+   =CONTEXT/<issue-uuid>/= subdirectory (created first if this is that
+   issue's first CONTEXT file) — a freshly generated UUID filename, an
+   entry in that subdirectory's =index.org= with =:SOURCE: you=,
+   =:STATUS: approved=, plus a =:SOURCE_FILE:= property recording the
+   original inbox filename and today's date. This is the only trace that
+   survives once the source file is deleted — worth having so a claim
+   that later looks wrong can be traced back to what kind of source it
+   came from and when, even though the source itself is gone.
+   #+begin_src org
+   * <Short, semantic title>
+     :PROPERTIES:
+     :ID:          <uuid>
+     :SOURCE:      you
+     :STATUS:      approved
+     :SOURCE_FILE: <original inbox filename>, ingested <ISO date>
+     :END:
+     - *File:* [[file:<uuid>.<ext>][<uuid>.<ext>]]
+     One or two sentences on what this material is.
+   #+end_src
+4. **One inbox file can fan out into several CONTEXT entries, across
+   several issues, if it genuinely covers more than one topic.** This is
+   expected, not a sign the file was mis-scoped — the same "one CONTEXT
+   file, one scoped topic" principle from
+   [[file:08-context-guide.org][08-context-guide.org]]'s Best Practices
+   still applies to each individual entry; it just means a source file
+   and a CONTEXT entry are no longer assumed to be one-to-one the way a
+   direct "you drop a file into CONTEXT yourself" hand-off used to
+   assume.
+5. Print a one-line receipt of what happened — e.g. "ingested
+   =covering-index-notes.pdf= -> filed issue =<uuid>= 'Design an
+   inventory reservation index', 2 CONTEXT entries" — *before* removing
+   the file. This is the only look you get at what happened to that
+   file before its only copy is gone. It is informational, not a
+   confirmation gate — it does not pause for approval.
+6. Delete the file from =inbox/= — only once it has actually,
+   successfully been ingested. If a file can't be processed (corrupt,
+   password-protected, unsupported format, or genuinely ambiguous which
+   issue it belongs to), leave it in =inbox/= and flag it to you
+   directly instead of guessing. A receipt printed for one file is never
+   license to assume the rest of a batch went the same way — each file
+   earns its own deletion on its own merits.
+7. Move to the next file.
+
+* What This Guide Does Not Change
+
+- Agent-sourced research keeps its exact existing lifecycle
+  (=proposed= -> your review -> =approved= -> =mined=) — see
+  [[file:08-context-guide.org][08-context-guide.org]]. Nothing here
+  loosens that gate; this is a parallel pathway for material that
+  already carries your approval by virtue of being yours.
+- Mining an ingested CONTEXT entry into a walkthrough still works
+  exactly like any other approved entry — see 08-context-guide.org's
+  Mining a File section and =SCRIPTS/context-mine.py=. Ingestion only
+  covers getting material *into* CONTEXT with the right metadata; citing
+  it from a walkthrough afterward is unchanged.
+- =inbox/= is not a substitute for pasting something directly into this
+  conversation — if it's short enough to paste, pasting it is still
+  fine and normal; the inbox exists for material that's more convenient
+  to hand over as a real file.
+
+* What the Validator Checks
+
+=inbox/= is excluded from the checks that apply to real walkthrough
+package directories (it never contains a UUID-named package, and isn't
+expected to). Nothing in this directory is validated beyond its own
+existence — its contents are, by design, transient and not yet in the
+shape any validator rule assumes.
+
+* Best Practices
+
+1. Ingest promptly rather than letting =inbox/= accumulate multiple
+   unrelated files across sessions — a pass covering many unrelated
+   documents at once makes the per-file receipts harder to actually
+   read and check.
+2. When in doubt about which issue a file belongs to, ask rather than
+   guess — leaving a file in =inbox/= and flagging the ambiguity costs
+   nothing; filing real research under the wrong issue is real cleanup
+   later.
+3. Don't force one inbox file into one CONTEXT entry if it genuinely
+   covers unrelated ground — let it fan out, per the Ingestion Workflow
+   above.

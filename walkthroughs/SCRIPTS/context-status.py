@@ -4,9 +4,13 @@ awaiting your review ('proposed'), and anything cleared to mine but not
 yet cited by a filed issue ('approved'). See
 INSTRUCTIONS/08-context-guide.org's Checking Pending Files section.
 
+CONTEXT is organized as one subdirectory per owning issue
+(CONTEXT/<issue-uuid>/), each with its own index.org — this scans every
+one of them, not a single flat file.
+
 This is a status report, not a pass/fail gate — run
-SCRIPTS/validate-walkthroughs.py for structural validation of
-context_index.org itself.
+SCRIPTS/validate-walkthroughs.py for structural validation of each
+subdirectory's index.org itself.
 
 Usage: .agents/walkthroughs/SCRIPTS/context-status.py
 """
@@ -16,7 +20,6 @@ from pathlib import Path
 
 WT_DIR = Path(__file__).resolve().parent.parent
 CONTEXT_DIR = WT_DIR / "CONTEXT"
-CONTEXT_INDEX = CONTEXT_DIR / "context_index.org"
 
 FILE_LINK_RE = re.compile(r"\[\[file:([^\]]+)\]")
 
@@ -38,12 +41,8 @@ def extract_drawer_field(lines, start, stop, field):
     return val
 
 
-def load_entries():
-    if not CONTEXT_INDEX.exists():
-        print(f"No context_index.org found at {CONTEXT_INDEX}")
-        return []
-
-    lines = CONTEXT_INDEX.read_text().splitlines()
+def load_entries_from(index_path, issue_uuid):
+    lines = index_path.read_text().splitlines()
     heading_idxs = [i for i, l in enumerate(lines) if re.match(r"^\*+\s", l)]
     entries = []
 
@@ -64,8 +63,24 @@ def load_entries():
                 break
         entries.append({
             "id": entry_id, "source": source, "status": status,
-            "file": file_link, "note": note,
+            "file": file_link, "note": note, "issue": issue_uuid,
         })
+    return entries
+
+
+def load_entries():
+    if not CONTEXT_DIR.is_dir():
+        print(f"No CONTEXT directory found at {CONTEXT_DIR}")
+        return []
+
+    entries = []
+    for sub in sorted(CONTEXT_DIR.iterdir()):
+        if not sub.is_dir():
+            continue
+        index_path = sub / "index.org"
+        if not index_path.exists():
+            continue
+        entries.extend(load_entries_from(index_path, sub.name))
     return entries
 
 
@@ -81,7 +96,7 @@ def main():
     if proposed:
         print(f"AWAITING YOUR REVIEW ({len(proposed)}) — agent-sourced, not yet approved:")
         for e in proposed:
-            print(f"  - {e['file']}  {e['note']}")
+            print(f"  - [{e['issue']}] {e['file']}  {e['note']}")
     else:
         print("AWAITING YOUR REVIEW (0)")
 
@@ -90,7 +105,7 @@ def main():
     if approved:
         print(f"READY TO MINE ({len(approved)}) — approved, no filed issue cites these yet:")
         for e in approved:
-            print(f"  - {e['file']}  {e['note']}")
+            print(f"  - [{e['issue']}] {e['file']}  {e['note']}")
     else:
         print("READY TO MINE (0)")
 

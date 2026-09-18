@@ -1,19 +1,56 @@
 #+TITLE: Walkthrough Shared Conventions
-#+WALKTHROUGH_GUIDE_VERSION: 20
+#+WALKTHROUGH_GUIDE_VERSION: 25
 
 Single source of truth for conventions shared by
 [[file:01-index-guide.org][01-index-guide.org]] (the index),
 [[file:02-expansion-guide.org][02-expansion-guide.org]] (walkthrough
 packages), [[file:04-archive-guide.org][04-archive-guide.org]]
-(archiving a settled package), [[file:05-wiki-guide.org][05-wiki-guide.org]]
-(the project wiki at =.agents/wikis/=),
+(archiving a settled package),
 [[file:07-code-suggestions-guide.org][07-code-suggestions-guide.org]]
 (suggesting code inside a =[you-run]= step without writing it into the repo),
-and [[file:08-context-guide.org][08-context-guide.org]] (the research
-staging area at =.agents/walkthroughs/CONTEXT/=). All six reference this
-file instead of restating it — a rule here changes in exactly one place,
-not several that can drift apart. Checked mechanically by
-=SCRIPTS/validate-walkthroughs.py= (walkthroughs, index, and wiki).
+[[file:08-context-guide.org][08-context-guide.org]] (the research
+staging area at =.agents/walkthroughs/CONTEXT/=), and
+[[file:10-ingestion-guide.org][10-ingestion-guide.org]] (ingesting your
+own already-researched material via =.agents/walkthroughs/inbox/=, a
+deliberately separate pathway from agent-sourced CONTEXT research). All
+six reference this file instead of restating it — a rule here changes
+in exactly one place, not several that can drift apart. Checked
+mechanically by =SCRIPTS/validate-walkthroughs.py= (walkthroughs and
+index).
+
+See also [[file:09-workflow-guide.org][09-workflow-guide.org]] for a
+cross-file map of how these guides' lifecycles (a CONTEXT file, an index
+issue, a walkthrough package) interact — a router that points at the
+rules below, never restates them, so it isn't part of the "changes in
+exactly one place" chain above and doesn't gate this file's own version
+number.
+
+* Git Usage
+
+*CRITICAL RULE — read-only git commands only.* Every guide in this system
+assumes the agent can freely inspect the repository's history and
+working-tree state to verify claims independently instead of trusting
+them — =git status=, =git diff= (working tree, staged, or between any two
+commits/branches), =git log=, =git show=, =git blame=, and similar. See
+[[file:02-expansion-guide.org][02-expansion-guide.org]]'s External Session
+Workflow for exactly this use, checking a session export's claims against
+the actual state of the repo.
+
+The agent must never use git to *mutate* anything, though — no staging
+(=git add=), no committing, no pushing, no rewriting history (=git reset=,
+=git rebase=, =git filter-branch=, anything with =--force=/=-f=), no
+discarding working-tree or staged changes (=git checkout --=, =git
+restore=, =git clean=, =git stash pop=/=apply=/=drop=), no deleting
+branches or tags, no touching remotes or git config. This holds
+regardless of what a session export claims was already committed, how
+confident the agent is that a change is correct, or how convenient
+committing would be right now — the repository's history is the human's
+own record of their own work, same reason a =[you-run]= step's actual
+implementation stays theirs to type (see
+[[file:07-code-suggestions-guide.org][07-code-suggestions-guide.org]]).
+Requested directly, immediately after =git status=/=git diff= were
+identified as a genuinely better way to verify what changed during a
+session than re-reading individual files.
 
 * UUID Convention
 
@@ -36,13 +73,11 @@ step — gets a permanent =:ID:= via a =:PROPERTIES:= drawer:
   own text. Headings and step descriptions stay clean and
   human-readable.
 - *CRITICAL RULE — one namespace.* Every UUID under
-  =.agents/walkthroughs/= *or* =.agents/wikis/= — index nodes, package
-  directory names, individual walkthrough steps, wiki pages (see
-  [[file:05-wiki-guide.org][05-wiki-guide.org]]'s UUID Placement), and
-  CONTEXT file entries (see
+  =.agents/walkthroughs/= — index nodes, package directory names,
+  individual walkthrough steps, and CONTEXT file entries (see
   [[file:08-context-guide.org][08-context-guide.org]]'s Naming &
-  Lifecycle) — must be globally unique across both trees, not just within
-  one file. Run =SCRIPTS/validate-walkthroughs.py= to check.
+  Lifecycle) — must be globally unique, not just within one file. Run
+  =SCRIPTS/validate-walkthroughs.py= to check.
 
 * Issue-Tracker Mental Model
 
@@ -63,12 +98,7 @@ version of the required =walkthrough.org= structure. Every
 =#+WALKTHROUGH_GUIDE_VERSION:= line directly under its =#+DATE:=.
 
 *This version number gates =walkthrough.org='s own required structure
-only.* =.agents/wikis/= (see [[file:05-wiki-guide.org][05-wiki-guide.org]])
-is a separate system with its own validator checks, enforced
-unconditionally rather than version-gated — a wiki page doesn't declare a
-=#+WALKTHROUGH_GUIDE_VERSION:= line and isn't subject to this section's
-staleness warning. Introducing =05-wiki-guide.org= itself did not bump this
-version, for that reason.
+only.*
 
 Bump the number here whenever the required structure actually changes
 — a section added, removed, or renamed, or a new CRITICAL RULE that
@@ -82,6 +112,115 @@ failure, so staleness stays visible instead of silent.
 
 ** Changelog
 
+- *v25* (2026-09-18): Removed the wiki module
+  ([[file:05-wiki-guide.org][05-wiki-guide.org]], =.agents/wikis/=)
+  entirely, along with every cross-reference to it. Requested directly,
+  after an audit found =.agents/wikis/= had never actually been
+  instantiated — not sparse, never created at all — despite 8 archived
+  walkthroughs each landing on a real "current state of the project"
+  decision that the guide's own trigger rule said should have produced a
+  page. Each archived walkthrough's own final =*Result:*= block had
+  already been serving as the de facto current-state reference in
+  practice, so the wiki's actual value proposition never materialized as
+  real pain at this project's scale. =SCRIPTS/validate-walkthroughs.py='s
+  =validate_wikis()= function, =WIKIS_DIR=/=WIKI_META_FILES= constants,
+  and the call to it in =main()= are all removed; every other guide's
+  cross-reference to the wiki (=07-code-suggestions-guide.org=,
+  =04-archive-guide.org=, =02-expansion-guide.org='s concept-promotion
+  flag and Notes template, =08-context-guide.org='s "CONTEXT is not the
+  wiki" framing, =09-workflow-guide.org='s Quick Reference row) is
+  removed or rewritten rather than left dangling. The two other unused
+  features found in the same audit — =02-expansion-guide.org='s
+  Step-Level Expansion, and =08-context-guide.org='s direct-paste
+  =SOURCE: you= pathway — were deliberately *not* removed: unlike the
+  wiki, both cost nothing while dormant (no standing directory structure,
+  no validator checks, opt-in prose only), so cutting them would be
+  churn without a matching benefit. Old changelog entries below that
+  mention the wiki (v8, v9, v18, and others) are left exactly as
+  written, same as v13 left pre-existing Quiz/Flashcards mentions
+  untouched — this changelog is a historical record, not rewritten to
+  match the system's current shape.
+- *v24* (2026-09-18): New file
+  [[file:10-ingestion-guide.org][10-ingestion-guide.org]] and
+  =.agents/walkthroughs/inbox/=: a deliberately separate pathway from
+  agent-sourced CONTEXT research, modeled on an ingestion workflow from a
+  different personal-knowledge-management agent the human uses, adapted
+  rather than adopted wholesale. The source workflow's core trigger model
+  — continuous, implicit, permission-free background writing — was
+  explicitly rejected as incompatible with this system's existing
+  approval-gated design (CONTEXT's "no filing without your go-ahead,"
+  the wiki's deliberate-update-only model, and the general "nothing gets
+  written without an explicit, attributable trigger" principle every
+  other guide in this system depends on). What *did* transfer: a staging
+  directory for material the human already researched themselves (text,
+  PDFs, photos, office documents), ingested one file at a time on
+  explicit request, each producing a filed =index.org= issue (new, if
+  none existing fits) and =CONTEXT/<issue-uuid>/= entries with a new
+  =:SOURCE_FILE:= provenance property, a one-line receipt printed before
+  deletion, and the file deleted only once actually, successfully
+  ingested — never guessed at, never batch-deleted on the strength of one
+  successful file in the same pass.
+  =SCRIPTS/validate-walkthroughs.py='s =SKIP_DIRS= gained =inbox= so it's
+  recognized as a legitimate, contents-transient directory rather than an
+  orphan. =08-context-guide.org='s own Workflow: User-Sourced Material
+  section was updated to describe both hand-off forms (direct paste vs.
+  inbox file) and point to the new guide for the latter, rather than
+  restating it.
+- *v23* (2026-09-15): New section in
+  [[file:07-code-suggestions-guide.org][07-code-suggestions-guide.org]]
+  ("When the Human Explicitly Asks for a Full Example") and a matching
+  bullet added to [[file:02-expansion-guide.org][02-expansion-guide.org]]'s
+  Template =For AI Assistants= boilerplate: the =*Suggested starting
+  point*= partial-example framing is for code offered proactively, before
+  the human has tried — once the human has actually tried, gotten stuck,
+  and explicitly asks for a complete example, give the whole thing
+  directly, without another partial hint or a repeated "type it yourself"
+  disclaimer stacked on a request already made plainly. Does *not* loosen
+  the unconditional rule that the agent never uses a file-writing tool on
+  the real project file — only what gets *said*, not who types the file.
+  Requested directly after exactly this stacking happened in a real
+  session: a human explicitly said "I cant think of a way to implement it
+  and i want to learn," got a correct example wrapped in enough
+  "verify this yourself" language that it read as gatekeeping. Also
+  updated the then-active =2e517fe3= walkthrough's own =For AI
+  Assistants= bullet to match, since it's a live document an external AI
+  session might read right now, and added a matching row to
+  [[file:09-workflow-guide.org][09-workflow-guide.org]]'s phrasing table.
+- *v22* (2026-09-14): =.agents/walkthroughs/CONTEXT/= restructured from a
+  single flat directory (one shared =context_index.org= tracking every
+  research file from every issue) into one subdirectory per owning issue
+  (=CONTEXT/<issue-uuid>/=), each with its own =index.org= — mirroring
+  the existing one-directory-per-issue shape walkthrough packages already
+  use. =SCRIPTS/context-status.py=, =SCRIPTS/context-mine.py=, and
+  =SCRIPTS/validate-walkthroughs.py='s =validate_context()= all rewritten
+  to walk every subdirectory instead of assuming one fixed file;
+  =validate_context()= also gained a new check mirroring the existing
+  walkthrough-package validation — each subdirectory's name must be a
+  valid UUID matching some real =index.org= node (any state, since
+  CONTEXT research routinely predates an issue's own expansion, unlike a
+  walkthrough package which does require =DONE=). All 17 existing
+  research files and their 19 citing =[[file:...]]= links across four
+  walkthroughs (one archived per issue, plus the then-active =2e517fe3=
+  package) were migrated and rewritten to match. Requested directly,
+  after the flat directory's growing file count (17 files across four
+  issues, one shared index) made it hard to tell at a glance which
+  research belonged to which issue.
+- *v21* (2026-09-13): Two additions, requested together in one message.
+  (1) New =* Git Usage= section (above), formalizing a CRITICAL RULE that
+  already applied in spirit but had never been written down: read-only
+  git commands (=status=/=diff=/=log=/=show=/=blame=) are always fine for
+  independent verification, but the agent must never stage, commit, push,
+  or otherwise mutate the repository's history or working tree via git,
+  no matter what a session export claims or how convenient it would be.
+  (2) New CRITICAL RULE in
+  [[file:02-expansion-guide.org][02-expansion-guide.org]]'s External
+  Session Workflow — check the full =git status=/=git diff= before
+  reconciling a session export, not just the files it happens to mention,
+  since an export can under-report real work just as easily as it can
+  over-claim. Both requested directly, immediately after =git status=
+  surfaced real, already-started implementation work (new projects, moved
+  and deleted files) that no session export had reported yet — proving
+  the gap in real time, not hypothetically.
 - *v20* (2026-09-13): New =SCRIPTS/context-mine.py=, documented in
   [[file:08-context-guide.org][08-context-guide.org]]'s new "Mining a
   File" section — automates only the bookkeeping half of mining a CONTEXT

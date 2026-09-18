@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Validate .agents/walkthroughs/ (and .agents/wikis/) against the rules in
+"""Validate .agents/walkthroughs/ against the rules in
 INSTRUCTIONS/00-conventions.org, 01-index-guide.org, 02-expansion-guide.org,
-04-archive-guide.org, 05-wiki-guide.org, and 08-context-guide.org. Exits
-non-zero if any check fails.
+04-archive-guide.org, and 08-context-guide.org. Exits non-zero if any check
+fails.
 
 Usage: .agents/walkthroughs/SCRIPTS/validate-walkthroughs.py
 """
@@ -16,11 +16,8 @@ ROOT = WT_DIR.parent.parent
 INDEX = WT_DIR / "index.org"
 CONVENTIONS = WT_DIR / "INSTRUCTIONS" / "00-conventions.org"
 ARCHIVE_DIR = WT_DIR / "archive"
-WIKIS_DIR = WT_DIR.parent / "wikis"
-WIKI_META_FILES = {"index.org", "CHANGELOG.org"}
 CONTEXT_DIR = WT_DIR / "CONTEXT"
-CONTEXT_INDEX = CONTEXT_DIR / "context_index.org"
-SKIP_DIRS = {"INSTRUCTIONS", "SCRIPTS", "archive", "CONTEXT"}
+SKIP_DIRS = {"INSTRUCTIONS", "SCRIPTS", "archive", "CONTEXT", "inbox"}
 CONTEXT_VALID_SOURCES = {"you", "agent"}
 CONTEXT_VALID_STATUSES = {"proposed", "approved", "mined"}
 
@@ -402,9 +399,7 @@ def validate_no_dangling_file_links(path, text):
     must resolve to a real file, relative to that file's own directory —
     a wrong number of '../' is exactly the kind of mistake that's easy to
     make and easy to miss by reading, since it looks correct until
-    something actually tries to follow it. Hit twice in practice while
-    writing cross-links from an active package directory to .agents/wikis/
-    before this check existed."""
+    something actually tries to follow it."""
     rel = path.relative_to(ROOT)
     for m in FILE_LINK_RE.finditer(text):
         target = m.group(1).split("::", 1)[0]
@@ -419,62 +414,45 @@ def validate_no_dangling_file_links(path, text):
                  f"{target}")
 
 
-def validate_wikis():
-    """See INSTRUCTIONS/05-wiki-guide.org's 'What the Validator Checks'."""
-    if not WIKIS_DIR.is_dir():
-        return
-    index_file = WIKIS_DIR / "index.org"
-    if not index_file.exists():
-        fail(f"{WIKIS_DIR.relative_to(ROOT)}: missing index.org")
-        return
-    index_text = index_file.read_text()
+def validate_context(node_ids):
+    """See INSTRUCTIONS/08-context-guide.org.
 
-    for p in WIKIS_DIR.iterdir():
-        if not p.is_file() or p.name in WIKI_META_FILES:
-            continue
-        rel = p.relative_to(ROOT)
-        if p.suffix != ".org":
-            fail(f"{rel}: every file in .agents/wikis/ must be .org "
-                 f"(readable in Emacs like everything else in this system)")
-            continue
-        if f"file:{p.name}" not in index_text:
-            fail(f"{rel}: page is not linked from wikis/index.org — an "
-                 f"orphaned page defeats the point of a single entry point")
-
-        text = p.read_text()
-        lines = text.splitlines()
-        page_id = extract_drawer_id(lines, 0, len(lines))
-        if not page_id:
-            fail(f"{rel}: no ':PROPERTIES:'/':ID:' drawer found")
-        else:
-            register_uuid(page_id, str(rel))
-
-        jb_links = re.findall(r"\[\[file:(\.\./walkthroughs/archive/[^\]]+\.org)\]", text)
-        if not jb_links:
-            fail(f"{rel}: no '* Justified By' link to an archived "
-                 f"walkthrough found")
-        for link in jb_links:
-            target = (WIKIS_DIR / link).resolve()
-            if not target.exists():
-                fail(f"{rel}: 'Justified By' link target does not exist: {link}")
-
-        validate_no_dangling_file_links(p, text)
-
-    for meta in WIKI_META_FILES:
-        meta_path = WIKIS_DIR / meta
-        if meta_path.exists():
-            validate_no_dangling_file_links(meta_path, meta_path.read_text())
-
-
-def validate_context():
-    """See INSTRUCTIONS/08-context-guide.org."""
+    CONTEXT is organized as one subdirectory per owning issue
+    (CONTEXT/<issue-uuid>/), each with its own index.org — mirroring how
+    walkthrough packages are one directory per issue UUID. This checks:
+    every direct child of CONTEXT/ is a directory (nothing flat at the
+    top level any more); each subdirectory's name is a valid UUID
+    matching some real index.org node (any state — CONTEXT research
+    routinely predates an issue's own expansion, so DONE is not
+    required, unlike a walkthrough package); each subdirectory has an
+    index.org; and each index.org is validated the same way the old
+    single flat file was, scoped to just that subdirectory's files.
+    """
     if not CONTEXT_DIR.is_dir():
         return
-    if not CONTEXT_INDEX.exists():
-        fail(f"{CONTEXT_DIR.relative_to(ROOT)}: missing context_index.org")
+
+    for p in CONTEXT_DIR.iterdir():
+        if not p.is_dir():
+            fail(f"{p.relative_to(ROOT)}: CONTEXT/ must contain only "
+                 f"per-issue subdirectories — no loose files at this level")
+            continue
+        validate_context_subdir(p, node_ids)
+
+
+def validate_context_subdir(sub_dir, node_ids):
+    rel_dir = sub_dir.relative_to(ROOT)
+    if not UUID_RE.match(sub_dir.name):
+        fail(f"{rel_dir}: subdirectory name is not a UUID")
+        return
+    if sub_dir.name not in node_ids:
+        fail(f"{rel_dir}: no matching index.org node for this UUID")
+
+    index_path = sub_dir / "index.org"
+    if not index_path.exists():
+        fail(f"{rel_dir}: missing index.org")
         return
 
-    text = CONTEXT_INDEX.read_text()
+    text = index_path.read_text()
     lines = text.splitlines()
     heading_idxs = [i for i, l in enumerate(lines) if re.match(r"^\*+\s", l)]
 
@@ -482,7 +460,7 @@ def validate_context():
     for i, line in enumerate(lines):
         if not re.match(r"^\*\s+\S", line):
             continue
-        loc = f"{CONTEXT_INDEX.relative_to(ROOT)}:{i + 1}"
+        loc = f"{rel_dir / 'index.org'}:{i + 1}"
         next_idx = next((h for h in heading_idxs if h > i), len(lines))
 
         if UUID_ANY_RE.search(line):
@@ -511,18 +489,18 @@ def validate_context():
         if not m:
             fail(f"{loc}: entry has no 'file:' link to its actual CONTEXT file")
         else:
-            target = (CONTEXT_DIR / m.group(1).split("::", 1)[0]).resolve()
+            target = (sub_dir / m.group(1).split("::", 1)[0]).resolve()
             if not target.exists():
                 fail(f"{loc}: 'file:' link target does not exist: {m.group(1)}")
             else:
                 indexed_files.add(target)
 
-    for p in CONTEXT_DIR.iterdir():
-        if not p.is_file() or p.name == "context_index.org" or p.resolve() in indexed_files:
+    for p in sub_dir.iterdir():
+        if not p.is_file() or p.name == "index.org" or p.resolve() in indexed_files:
             continue
-        fail(f"{p.relative_to(ROOT)}: file is not listed in context_index.org")
+        fail(f"{p.relative_to(ROOT)}: file is not listed in {rel_dir / 'index.org'}")
 
-    validate_no_dangling_file_links(CONTEXT_INDEX, text)
+    validate_no_dangling_file_links(index_path, text)
 
 
 def main():
@@ -553,8 +531,7 @@ def main():
         validate_archived_no_dangling_sesh_links(arc_file, arc_file.read_text())
         validate_no_dangling_file_links(arc_file, arc_file.read_text())
 
-    validate_wikis()
-    validate_context()
+    validate_context(node_ids)
 
     for w in warnings:
         print(f"WARN: {w}")

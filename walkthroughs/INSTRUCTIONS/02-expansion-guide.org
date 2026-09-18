@@ -55,8 +55,7 @@ not just what shape it takes.
 
 1. *Read the target issue's own description* in
    [[file:../index.org][index.org]] — usually already scoped by links to
-   existing wiki pages and prior archived walkthroughs. Read those too,
-   before writing anything.
+   prior archived walkthroughs. Read those too, before writing anything.
 2. *Do real research before writing the Problem section.* Fetch real,
    current, external sources — official docs, specs, API references — not
    unstated assumption or memory alone. A claim in the Problem section or a
@@ -65,8 +64,8 @@ not just what shape it takes.
    system holds every =*Result:*= block to (see
    [[file:00-conventions.org][00-conventions.org]]).
    - *CRITICAL RULE — verify a citation before reusing it.* Before citing an
-     earlier walkthrough or wiki page as having already established some
-     fact, open that file and check the fact is actually in there — don't
+     earlier walkthrough as having already established some fact, open
+     that file and check the fact is actually in there — don't
      reuse a citation from memory, or from how the issue happened to be
      phrased in =index.org=. Found by hitting this exact case:
      =index.org='s own description for issue =44c128d0= cited the
@@ -74,7 +73,7 @@ not just what shape it takes.
      made — an =initialize= capability list naming =logging= is not the
      same as confirming the stdio/stderr constraint.
 3. *Write the Problem section*, citing the research from step 2 and linking
-   related wiki pages/walkthroughs.
+   related walkthroughs.
 4. *Write the Guide's steps*, each with a =*Why:*= line.
    - *CRITICAL RULE — a =*Why:*= explains the mechanism, never the eventual
      answer.* By the time this step is written, the author (frequently an
@@ -300,17 +299,6 @@ of making them parse the raw output cold.
   sentence or two per decision — deliberately lighter than a full
   argument graph; see the CRITICAL RULE on capturing these live, in the
   External Session Workflow below.
-- *Wiki update*: when this walkthrough's final step lands on a decision
-  that changes this project's current state (a language choice, a
-  credential model, a schema, anything a future reader would actually want
-  to know "what does this project do right now" about), that's the signal
-  to create or update the matching page in =.agents/wikis/=. See
-  [[file:05-wiki-guide.org][05-wiki-guide.org]] for the full mechanism —
-  don't restate it here. This replaced an earlier, narrower rule tied to a
-  concept recurring across multiple walkthroughs; that rule doesn't apply
-  to this project's wiki (see 05-wiki-guide.org's Purpose section for why),
-  but is left as-is in any already-archived walkthrough that used the old
-  phrasing, since archived walkthroughs are never rewritten.
 
 ** 4. Search Prompts
 
@@ -404,8 +392,8 @@ but didn't.>
 
 * Further Reading
 
-<Optional: man pages, specs, or a wiki page — link out rather than
-duplicating reference material that already exists elsewhere.>
+<Optional: man pages, specs, or another walkthrough — link out rather
+than duplicating reference material that already exists elsewhere.>
 #+END_SRC
 
 * The Teaching Contract
@@ -421,7 +409,7 @@ These are behavior rules for the agent, not just document formatting:
    with a restated obvious or interesting-but-irrelevant trivia doesn't
    satisfy this rule either — see the Guide section's load-bearing test,
    above.
-3. If a problem matches something already in the wiki or a prior
+3. If a problem matches something already covered in a prior
    walkthrough, link to it instead of re-deriving it — but still write
    the =*Why:*= for *this* instance, since the specific trigger
    usually differs.
@@ -516,6 +504,21 @@ checking happened once, elsewhere, by a different AI. See
 in the Template below — this is that same discipline, applied specifically
 to reconciling a SESH file rather than to a fresh step.
 
+** CRITICAL RULE — check the full diff, not just what the export mentions
+
+Before reconciling a session export's claims into =*Result:*= blocks, run
+=git status= and =git diff= against the repository (read-only only — see
+[[file:00-conventions.org][00-conventions.org]]'s Git Usage section) to see
+everything that actually changed, not just the files the export happens to
+mention. An export can under-report — real, substantial work that nobody
+thought to describe — just as easily as it can over-claim; the same
+"claim, not a record" discipline the CRITICAL RULE above applies to
+*prose* applies here to *scope*. Don't assume a session export's own file
+list is complete just because every file it does mention checks out.
+Found directly: running =git status= mid-session surfaced real,
+already-started work (new projects, moved and deleted files) that no
+session export had reported yet.
+
 ** CRITICAL RULE — capture decisions live, not reconstructed afterward
 
 A =*Decision:*= entry (see =* Notes= in Required Structure, above) must
@@ -565,8 +568,8 @@ before doing anything else.
   in Notes. You have no memory of any prior session on this file — don't
   guess at progress or default to re-starting from step 1.
 - *Treat this file's own claims as unverified, not as ground truth.* The
-  Problem section, a step's =*Why:*=, and any citation to a wiki page or
-  prior walkthrough reflect the author's understanding at authoring time —
+  Problem section, a step's =*Why:*=, and any citation to a prior
+  walkthrough reflect the author's understanding at authoring time —
   not proof. This system has already caught a real case where an issue's
   own description cited a walkthrough for a claim that walkthrough never
   actually made (see =02-expansion-guide.org='s Authoring Workflow section
@@ -590,6 +593,20 @@ before doing anything else.
   already informed enough to catch a wrong claim in this file, the same way
   the two rules above ask of you for individual steps — just done once, up
   front, instead of only when a step happens to ask for it.
+- *Never use a file-writing tool to place implementation code into the
+  actual project file a =[you-run]= step is about* — that file is the
+  human's own typing to do, regardless of how confident you are in the
+  answer or how tedious the step looks. This is unconditional, and is a
+  different thing from what you *say*: when the human explicitly asks for
+  a complete, worked example because they're stuck ("I can't think of how,"
+  "give me example code," "I want to learn from an example"), give the
+  whole thing, directly, in chat or as an updated inline suggestion — not
+  another partial hint, and not a repeated "type it yourself" disclaimer
+  on top of a request they already made plainly. Rationing explanation
+  after an explicit ask is the same overcorrection as refusing to discuss
+  code at all; see
+  [[file:07-code-suggestions-guide.org][07-code-suggestions-guide.org]]
+  for the full reasoning and the incident that surfaced this distinction.
 - This file documents how a problem was actually solved. Do not run or
   solve a =*[you-run]*= step yourself and report the result — offer it to
   the human and let them run it. Only execute a step directly if it's
@@ -649,8 +666,6 @@ before doing anything else.
 * Notes
 
 - <Open question, skipped step + reason, or related walkthrough link>
-- <Wiki update, if this walkthrough's decision changes the project's
-  current state — see 05-wiki-guide.org>
 
 * Search Prompts
 
@@ -673,47 +688,44 @@ before doing anything else.
    print.
 4. Keep supporting files (scripts, logs, diffs) inside the package
    directory rather than inline, once they're more than a few lines.
-5. When a walkthrough's decision changes the project's current state,
-   update the matching =.agents/wikis/= page in the same pass — don't
-   leave it for later. See [[file:05-wiki-guide.org][05-wiki-guide.org]].
-6. Every step gets an =:ID:=, but few steps get a detail file — an
+5. Every step gets an =:ID:=, but few steps get a detail file — an
    ID with no detail file is the normal, expected state, not an
    incomplete one.
-7. Search Prompts is not a bibliography — don't just paste a link you
+6. Search Prompts is not a bibliography — don't just paste a link you
    already have. Write it as a query, so the human is the one who runs
    the search, reads several results, and forms their own judgment
    about which one actually answers it. The AI reading this file runs
    the same queries too, but for its own pre-session grounding — see
    =For AI Assistants='s =Mandatory pre-session research= pillar — not
    as a substitute for the human doing it.
-8. *External sessions count as the human doing the work* — working
+7. *External sessions count as the human doing the work* — working
    =[you-run]= steps in a separate AI chat and bringing back a
    =*-SESH.<ext>= export (see External Session Workflow above) is a valid way
    to work a walkthrough. What doesn't count is skipping reconciliation:
    the export's claims must become real, verified output pasted into the
    step before anything gets checked off, and the file must be linked from
    Notes.
-9. *Run the validator* before considering a package done —
+8. *Run the validator* before considering a package done —
    =SCRIPTS/validate-walkthroughs.py= checks the required sections all
    exist, every step has a valid unique =:ID:=, and the guide version
    matches current. Treat every CRITICAL RULE above as something this
    script can and does check, not just prose to remember.
-10. *Don't strip =For AI Assistants= down to shorten a package.*
+9. *Don't strip =For AI Assistants= down to shorten a package.*
     Orientation-on-load and skepticism of the file's own claims are the
     actual mechanism that keeps this a reliable record instead of a fix log
     an AI happens to read aloud. Trimming that section down to "don't do
     steps for the human" keeps the letter of the Teaching Contract but
     loses most of what makes it work.
-11. *Group a long checklist under subgoal labels* (see the Guide
+10. *Group a long checklist under subgoal labels* (see the Guide
     section, above) once it runs past roughly five or six steps — don't
     leave a reader to hold a dozen flat checkboxes in mind at once to
     see the shape of the work. Don't force it on a short checklist
     either; three steps don't need invented subgoals.
-12. *Run every =*Why:*= line through the load-bearing test* (see the
+11. *Run every =*Why:*= line through the load-bearing test* (see the
     Guide section, above) before considering a step finished — restating
     the obvious or reaching for interesting trivia both cost the reader
     parsing time without adding understanding.
-13. *Capture decisions, roadblocks, and pivots as their own =*Decision:*=
+12. *Capture decisions, roadblocks, and pivots as their own =*Decision:*=
     entries* (see =* Notes= in Required Structure, above), not just step
     outputs — extracted by whoever still has the actual session in
     context (the external AI itself, at session-close) rather than

@@ -8,11 +8,20 @@ across this whole system, and
 [[file:01-index-guide.org][01-index-guide.org]] for how a CONTEXT file's
 material actually turns into a Level 3 issue.
 
-CONTEXT is not the wiki ([[file:05-wiki-guide.org][05-wiki-guide.org]]).
-The wiki holds durable, settled knowledge; CONTEXT holds raw, unsorted
-material on its way to becoming something else — an issue, and later a
-walkthrough. A CONTEXT file that never produces anything should not
-linger indefinitely (see Naming & Lifecycle, below).
+CONTEXT is organized as one subdirectory per owning issue,
+=CONTEXT/<issue-uuid>/= — the same UUID as that issue's own
+[[file:../index.org][index.org]] node and, once expanded, its
+walkthrough package directory — mirroring the same one-directory-per-issue
+shape a walkthrough package already uses. Every research file that exists
+because of a given issue lives together in that issue's own subdirectory,
+never loose at =CONTEXT/='s top level.
+
+CONTEXT holds raw, unsorted material on its way to becoming something
+else — an issue, and later a walkthrough, whose own archived record
+(see [[file:04-archive-guide.org][04-archive-guide.org]]) is what settles
+into durable history once the work is done. A CONTEXT file that never
+produces anything should not linger indefinitely (see Naming &
+Lifecycle, below).
 
 * Two Directions
 
@@ -35,8 +44,9 @@ levels, and must not be conflated:
 *CRITICAL RULE — CONTEXT files are never edited to carry their own
 metadata.* A CONTEXT file is raw material — it stays exactly as written
 or dropped in, byte for byte. Every file's =:ID:=, =:SOURCE:=, and
-=:STATUS:= live instead in a single sibling file,
-=.agents/walkthroughs/CONTEXT/context_index.org=, one entry per file:
+=:STATUS:= live instead in a sibling file scoped to that file's own
+owning issue, =.agents/walkthroughs/CONTEXT/<issue-uuid>/index.org=, one
+entry per research file *belonging to that issue*:
 
 #+begin_src org
 * <Short, semantic title — what this material actually is>
@@ -53,7 +63,7 @@ The heading is a short, human-readable title, never the UUID itself — same
 "never in visible text" rule as every other node in this system
 (00-conventions.org's UUID Convention). The =:ID:= already gives the entry
 its permanent, linkable identity; the heading's only job is to let a human
-scanning =context_index.org= tell entries apart at a glance.
+scanning that issue's own =index.org= tell its entries apart at a glance.
 
 - =:ID:= — the file's permanent id. Generated the same way as every other
   UUID in this system (see 00-conventions.org's UUID Convention:
@@ -83,10 +93,22 @@ situation. A =SOURCE: you= entry has no such gate, since it starts at
 
 * Naming & Lifecycle
 
+*CRITICAL RULE — which subdirectory a file goes in is never a choice.*
+A CONTEXT file always belongs to exactly one issue — the one it's being
+researched for — and lives at
+=CONTEXT/<owning-issue-uuid>/<uuid>.<ext>=. If that issue's subdirectory
+doesn't exist yet (its first-ever CONTEXT file), create it as part of
+adding this one, the same way expanding an issue creates its walkthrough
+package directory on first use (see
+[[file:02-expansion-guide.org][02-expansion-guide.org]]'s Expansion
+Workflow). A CONTEXT file's owning issue does not need to be expanded
+into a walkthrough yet, or even to exist as anything beyond a filed
+=index.org= node — research routinely happens before expansion.
+
 *CRITICAL RULE — generic UUID filenames, generate never invent.* Every
 CONTEXT file is named =<uuid>.<original-ext>= — the same UUID as its
-=context_index.org= entry's =:ID:=, produced with =uuidgen= (or the
-Python fallback in 00-conventions.org's UUID Convention), never
+entry's own =:ID:= in that issue's =index.org=, produced with =uuidgen=
+(or the Python fallback in 00-conventions.org's UUID Convention), never
 hand-typed. The extension stays whatever the material actually arrived
 in (=.md=, =.txt=, =.org=, ...) — same reasoning as a SESH export never
 being converted to =.org= (00-conventions.org changelog, v6): the file is
@@ -96,16 +118,21 @@ uninformative on its own, exactly like a walkthrough package directory
 being a UUID rather than a slug.
 
 This UUID shares the *same global namespace* as every other UUID in this
-system — an index node, a walkthrough step, a wiki page. See
-00-conventions.org's UUID Convention, "one namespace" rule.
+system — an index node, a walkthrough step. See 00-conventions.org's
+UUID Convention, "one namespace" rule. Note this
+means a CONTEXT file's own UUID is *not* the same as its owning issue's
+UUID (the subdirectory name) — the subdirectory name identifies which
+issue owns the files inside it, each file inside still gets its own,
+separate, freshly-generated UUID.
 
 A CONTEXT file that ends up cited by a filed issue (=STATUS: mined=)
 stays — link integrity depends on it. An entry that never produces
 anything — declined during approval, or user-sourced material that never
-turned into an issue — should have its file deleted and its
-=context_index.org= entry removed, rather than left to accumulate. Same
-instinct as [[file:01-index-guide.org][01-index-guide.org]]'s Best
-Practice 3 (prune stale open issues).
+turned into an issue — should have its file deleted and its entry
+removed from that issue's =index.org=, rather than left to accumulate.
+Same instinct as [[file:01-index-guide.org][01-index-guide.org]]'s Best
+Practice 3 (prune stale open issues). If that was the subdirectory's only
+file, delete the now-empty subdirectory too.
 
 * Workflow: Agent-Sourced Research
 
@@ -114,11 +141,12 @@ Practice 3 (prune stale open issues).
    the UUID Convention's "generate, never invent" rule, applied to claims
    instead of identifiers.
 2. Curate a small, focused set (not a link dump) into one CONTEXT file,
-   named with a freshly generated UUID, with a one-line "why this is
-   relevant" note per source — mirroring NotebookLM's Discover Sources
-   annotations.
-3. Add its =context_index.org= entry: =:SOURCE: agent=, =:STATUS:
-   proposed=.
+   named with a freshly generated UUID, placed in the owning issue's own
+   =CONTEXT/<issue-uuid>/= subdirectory (created first if this is that
+   issue's first CONTEXT file), with a one-line "why this is relevant"
+   note per source — mirroring NotebookLM's Discover Sources annotations.
+3. Add its entry to that subdirectory's own =index.org=: =:SOURCE: agent=,
+   =:STATUS: proposed=.
 4. Present the findings in conversation and stop. Do not create any
    issue in =index.org= that cites this file yet (see the CRITICAL RULE
    under The Context Index).
@@ -128,12 +156,28 @@ Practice 3 (prune stale open issues).
 
 * Workflow: User-Sourced Material
 
-You drop a file in CONTEXT yourself; the agent generates its UUID
-filename and adds a =context_index.org= entry with =:SOURCE: you=,
-=:STATUS: approved= — no approval gate, since putting it there already is
-your approval. The agent mines it directly into filed issues the same way
-any approved CONTEXT file does — see The Context Index, above, for the
-=STATUS: mined= transition once at least one filed issue cites it.
+Material you've researched yourself is always auto-approved — no review
+gate, since choosing to bring it in already is your approval — but *how*
+it actually gets into a =CONTEXT/<issue-uuid>/= subdirectory now has two
+forms:
+
+- *Handed over directly in conversation* (a short paste, or something
+  concrete enough to write up on the spot): the agent writes it straight
+  into the owning issue's =CONTEXT/<issue-uuid>/= subdirectory, generates
+  its UUID filename, and adds an entry to that subdirectory's =index.org=
+  with =:SOURCE: you=, =:STATUS: approved=.
+- *Handed over as a file, via =.agents/walkthroughs/inbox/=* — a
+  genuinely separate workflow from agent-sourced research, covering
+  format handling, issue-mapping (including filing a brand-new issue
+  when nothing existing fits), per-file receipts, and deletion after
+  ingestion. See
+  [[file:10-ingestion-guide.org][10-ingestion-guide.org]] for the full
+  procedure — this file doesn't restate it.
+
+Either way, the entry lands in the same place and the agent mines it
+directly into filed issues the same way any approved CONTEXT file does —
+see The Context Index, above, for the =STATUS: mined= transition once at
+least one filed issue cites it.
 
 *CRITICAL RULE — grounding applies to both directions.* Every issue
 description that states a claim drawn from research must trace back to
@@ -148,11 +192,11 @@ Assistants= section already requires when *reading* a walkthrough, to
 
 * Checking Pending Files
 
-=SCRIPTS/context-status.py= reads =context_index.org= and reports every
-entry that isn't =mined= yet — =proposed= entries waiting on your review,
-and =approved= entries cleared to mine but not yet used. Run it any time
-CONTEXT feels like it's accumulating faster than it's being worked
-through.
+=SCRIPTS/context-status.py= reads every =CONTEXT/<issue-uuid>/index.org=
+and reports every entry that isn't =mined= yet, tagged by owning issue —
+=proposed= entries waiting on your review, and =approved= entries cleared
+to mine but not yet used. Run it any time CONTEXT feels like it's
+accumulating faster than it's being worked through.
 
 * Mining a File
 
@@ -164,12 +208,14 @@ along with whatever real content the research justifies, and (2) flip the
 entry's =:STATUS:= to =mined= once that citation exists.
 
 =SCRIPTS/context-mine.py <context-uuid> <citing-file>= automates step 2
-only — it refuses to run unless the citing file already contains a real
-=[[file:...]]= link to that UUID, then flips =:STATUS:= and re-runs the
-full validator. It deliberately does *not* write the citation or the
-mined content itself: deciding what the research actually justifies
-adding, and writing it well, stays exactly as much a human (or an
-agent working *with* the human) task as writing any other part of a
+only — it searches every =CONTEXT/<issue-uuid>/index.org= for the entry
+matching =<context-uuid>=, refuses to run unless the citing file already
+contains a real =[[file:...]]= link to that UUID, then flips that entry's
+=:STATUS:= (in whichever subdirectory's =index.org= actually holds it)
+and re-runs the full validator. It deliberately does *not* write the
+citation or the mined content itself: deciding what the research actually
+justifies adding, and writing it well, stays exactly as much a human (or
+an agent working *with* the human) task as writing any other part of a
 walkthrough — this script only removes the repetitive bookkeeping around
 that decision, not the decision itself.
 
@@ -187,7 +233,9 @@ that decision, not the decision itself.
    review it and flip its status, or delete it and its entry if it turned
    out not to be worth pursuing. =SCRIPTS/context-status.py= is what
    surfaces these.
-5. Run =SCRIPTS/validate-walkthroughs.py= after editing
-   =context_index.org= — it checks every entry has a valid, globally
-   unique =:ID:=, a valid =:SOURCE:=/=:STATUS:=, a =file:= link that
-   resolves, and that no real CONTEXT file is missing its entry.
+5. Run =SCRIPTS/validate-walkthroughs.py= after editing any
+   =CONTEXT/<issue-uuid>/index.org= — it checks every entry has a valid,
+   globally unique =:ID:=, a valid =:SOURCE:=/=:STATUS:=, a =file:= link
+   that resolves, that no real CONTEXT file is missing its entry, and
+   that the subdirectory itself is named after a real =index.org= node's
+   UUID.

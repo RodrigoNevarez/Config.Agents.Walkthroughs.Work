@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 """Mine an approved CONTEXT file into a citing issue/walkthrough: verifies
-the citing file already links to it, flips context_index.org's :STATUS:
-to 'mined', and re-runs the full validator. See
+the citing file already links to it, flips its owning subdirectory's
+index.org's :STATUS: to 'mined', and re-runs the full validator. See
 INSTRUCTIONS/08-context-guide.org.
+
+CONTEXT is organized as one subdirectory per owning issue
+(CONTEXT/<issue-uuid>/), each with its own index.org — this searches all
+of them for the entry matching <context-uuid>, rather than assuming a
+single flat file.
 
 This script deliberately does NOT write the citation or any mined content
 for you — add the actual [[file:...]] link (and whatever prose draws on
@@ -21,7 +26,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 WT_DIR = SCRIPT_DIR.parent
 ROOT = WT_DIR.parent.parent
-CONTEXT_INDEX = WT_DIR / "CONTEXT" / "context_index.org"
+CONTEXT_DIR = WT_DIR / "CONTEXT"
 VALIDATOR = SCRIPT_DIR / "validate-walkthroughs.py"
 
 UUID_RE = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
@@ -30,6 +35,23 @@ UUID_RE = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
 def fail(msg):
     print(f"ERROR: {msg}", file=sys.stderr)
     sys.exit(1)
+
+
+def find_owning_index(context_uuid):
+    """Search every CONTEXT/<issue-uuid>/index.org for an entry with
+    :ID: context_uuid. Returns the index.org Path, or None."""
+    if not CONTEXT_DIR.is_dir():
+        return None
+    for sub in sorted(CONTEXT_DIR.iterdir()):
+        if not sub.is_dir():
+            continue
+        index_path = sub / "index.org"
+        if not index_path.exists():
+            continue
+        text = index_path.read_text()
+        if re.search(rf"^\s*:ID:\s+{re.escape(context_uuid)}\s*$", text, re.I | re.M):
+            return index_path
+    return None
 
 
 def main():
@@ -44,8 +66,6 @@ def main():
     citing_file = citing_path if citing_path.is_absolute() else (ROOT / citing_path)
     citing_file = citing_file.resolve()
 
-    if not CONTEXT_INDEX.exists():
-        fail(f"{CONTEXT_INDEX} does not exist")
     if not citing_file.exists():
         fail(f"citing file does not exist: {citing_file}")
 
@@ -59,7 +79,11 @@ def main():
             f"write the citation or the content for you."
         )
 
-    lines = CONTEXT_INDEX.read_text().splitlines()
+    context_index = find_owning_index(context_uuid)
+    if context_index is None:
+        fail(f"no CONTEXT/<issue-uuid>/index.org entry found with :ID: {context_uuid}")
+
+    lines = context_index.read_text().splitlines()
     heading_idxs = [i for i, l in enumerate(lines) if re.match(r"^\*+\s", l)]
 
     entry_start = None
@@ -76,7 +100,7 @@ def main():
             break
 
     if entry_start is None:
-        fail(f"no context_index.org entry found with :ID: {context_uuid}")
+        fail(f"no entry found with :ID: {context_uuid} in {context_index}")
 
     status_line_idx = None
     for j in range(entry_start + 1, entry_end):
@@ -89,8 +113,9 @@ def main():
     current = re.sub(r"^\s*:STATUS:\s+", "", lines[status_line_idx], flags=re.I).strip()
     indent = lines[status_line_idx][: len(lines[status_line_idx]) - len(lines[status_line_idx].lstrip())]
     lines[status_line_idx] = f"{indent}:STATUS:   mined"
-    CONTEXT_INDEX.write_text("\n".join(lines) + "\n")
-    print(f"{context_uuid}: {current} -> mined (cited from {citing_file.relative_to(ROOT)})", flush=True)
+    context_index.write_text("\n".join(lines) + "\n")
+    print(f"{context_uuid}: {current} -> mined ({context_index.relative_to(ROOT)}, "
+          f"cited from {citing_file.relative_to(ROOT)})", flush=True)
 
     result = subprocess.run([sys.executable, str(VALIDATOR)])
     sys.exit(result.returncode)
