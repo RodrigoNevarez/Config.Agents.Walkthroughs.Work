@@ -108,6 +108,7 @@ CRITICAL RULE that the export is a claim, not a record.
 | Reconcile a session export from external AI work            | Follow the External Session Workflow — verify, don't transcribe | 02-expansion-guide.org               |
 | Settle a fully-checked walkthrough out of the way            | Follow the Archive Workflow                                  | 04-archive-guide.org                 |
 | Check whether anything's structurally broken                | =SCRIPTS/validate-walkthroughs.py=                            | all of the above                     |
+| See the issue dependency graph visually (e.g. in Obsidian)  | Run =SCRIPTS/generate-obsidian-graph.py=, open =.agents/walkthroughs/obsidian-graph/= as a vault | Scripts at a Glance, below |
 
 * Recognizing Your Language
 
@@ -163,3 +164,4 @@ phrasing matches one of these closely.
 | =SCRIPTS/validate-walkthroughs.py=   | Structural validity across walkthroughs, =index.org=, and =CONTEXT= — the mechanical backstop for every CRITICAL RULE that *can* be checked mechanically. | Judge content quality, or whether a =*Why:*= actually explains anything. |
 | =SCRIPTS/context-status.py=          | Reports every =CONTEXT= entry not yet =mined=.                       | Decide what's worth mining, or change anything. |
 | =SCRIPTS/context-mine.py=            | Flips a =CONTEXT= entry to =mined= — but only once a real citation already exists in the file you point it at. | Write the citation or the mined content for you. |
+| =SCRIPTS/generate-obsidian-graph.py= | Regenerates a disposable, read-only =obsidian-graph/= directory — one =.md= per issue, =:BLOCKED_BY:= as typed frontmatter — for viewing the dependency graph in Obsidian. | Read anything but =index.org=, or treat its output as anything but a rebuildable view; =index.org= stays the source of truth. |
