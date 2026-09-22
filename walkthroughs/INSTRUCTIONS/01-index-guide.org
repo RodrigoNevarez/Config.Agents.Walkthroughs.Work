@@ -42,61 +42,66 @@ once it's closed (see
 section for the generation and placement rules — same rules, one
 place, shared with the walkthrough packages themselves.
 
-** The Step Property
+** The Blocked By Property
 
-Alongside =:ID:=, every Level 3 node also carries a =:STEP:= — a positive
-integer. Its purpose is different from everything else in this drawer:
-=:ID:= identifies *this* node; =:STEP:= records where it sits in *this
-project's own recommended build sequence for its class of project* (e.g.
-"an MCP server integrating an external API"), so that a future, similar
-project can retrace the same sequence of decisions instead of rediscovering
-it from scratch. This exists because walkthroughs, per this guide's own
-intro, "are not scoped to any one project or repository's setup" — the
-index for one project is itself a reusable template for the next one like
-it.
+Alongside =:ID:=, a Level 3 node may also carry a =:BLOCKED_BY:= — zero
+or more UUIDs, space-separated, each naming another Level 3 node in this
+same =index.org= that must genuinely be true (built, decided, merged)
+before this one can even start. Absence means exactly what it looks
+like: nothing currently known blocks it, and it can be worked today.
+This is a real dependency graph, not a single linear sequence — two
+issues can be mutually independent (neither blocks the other) and both
+still block a third, something one flat ordering could never express.
 
-*CRITICAL RULE — =:STEP:= is the recommended order, not a historical
-timestamp.* It does not necessarily match the order issues were actually
-filed or resolved in this specific run — real work sometimes gets tackled
-out of order, revisited, or batched unevenly across sessions. =:STEP:=
-records the *clean* sequence a future similar project should actually
-follow, which is usually close to (but not obligated to match) the real
-history.
+This exists for the same reason a linear build order once did:
+walkthroughs "are not scoped to any one project or repository's setup"
+(this guide's own intro) — the index for one project doubles as a
+reusable template for the next similar one. A real dependency graph is a
+*better* template than a flat sequence ever was, since it records the
+actual structural prerequisites a future project needs to satisfy, not
+just one arbitrary linearization of them.
 
-*CRITICAL RULE — a =DONE= node's =:STEP:= is permanent; a =TODO= node's is
-not.* Once a node closes (=DONE=), its =:STEP:= is locked — same reasoning
-as archived walkthrough packages never being rewritten (see
-[[file:04-archive-guide.org][04-archive-guide.org]]): it's now a historical
-record of what was actually done, in what order, and a future project may
-already be mid-sequence following that exact number.
+*CRITICAL RULE — a =DONE= node's =:BLOCKED_BY:= is permanent; a =TODO=
+node's is not.* Once a node closes, its =:BLOCKED_BY:= is a historical
+record of what actually had to be true first — never edited afterward,
+same reasoning as archived walkthrough packages never being rewritten
+(see [[file:04-archive-guide.org][04-archive-guide.org]]). An open
+node's =:BLOCKED_BY:= is a live understanding of what's actually in the
+way right now, and gets rewired freely as that understanding changes —
+adding an edge when a real prerequisite surfaces, removing one once it's
+satisfied or turns out not to matter — without needing to touch anything
+else in the graph. This is strictly easier than the flat-sequence
+renumbering discipline it replaces: a node with nothing depending on it
+can be inserted, moved, or removed without disturbing any other node's
+position relative to anything but its own direct blockers.
 
-An open (=TODO=) node's =:STEP:= is a *plan*, not a record, and real
-projects shift — priorities change mid-stream, an issue gets deferred, a
-new one turns out to belong earlier than issues already filed. Renumbering
-the still-open nodes to reflect the current intended sequence is allowed,
-and often necessary — treating an unsolved issue's =:STEP:= as frozen the
-instant it's typed would leave the index describing a build order nobody
-actually intends to follow anymore, which defeats the whole point of
-maintaining it. When priorities shift, reorder the =TODO= nodes' =:STEP:=
-values to match. Renumbering can also close a gap left by a pruned issue
-(Best Practice 3, below) as long as every renumbered node is still =TODO=.
+*CRITICAL RULE — every =:BLOCKED_BY:= UUID must resolve to a real node,
+and the graph must be acyclic.* A UUID that doesn't match any node in
+=index.org= is a dangling reference — usually the result of pruning an
+issue (Best Practice 3, below) without also removing it from whatever it
+was blocking. A cycle (=A= blocked by =B= blocked by =A=) is a
+contradiction, not just untidy: nothing inside a cycle could ever
+legitimately start. =SCRIPTS/validate-walkthroughs.py= checks both
+mechanically.
 
-Never renumber a =DONE= node to make room for a reordered =TODO= one — a
-closed step's position in history doesn't move just because what comes
-after it changed. If a =TODO= needs to land between two =DONE= steps'
-numbers, it's fine for the resulting sequence to be non-contiguous (e.g.
-=DONE= at 3 and 5, the reordered =TODO= landing at 4 having previously been
-7) — =:STEP:= only has to be a valid, globally unique positive integer that
-sorts into the right relative order; it was never a dense 1..n count.
+*CRITICAL RULE — pruning an issue means removing it from every
+=:BLOCKED_BY:= that names it, not just deleting its own node.* Grep for
+its UUID across =index.org= before deleting the node itself — the same
+"remove every link that points at a file you're about to delete"
+discipline [[file:04-archive-guide.org][04-archive-guide.org]] already
+applies to archiving.
 
-Every Level 3 node needs a =:STEP:=, =TODO= or =DONE= — the sequence exists
-to be followed forward, so an unexpanded issue still needs its place in
-line, not just the ones already closed.
+A node with an empty or absent =:BLOCKED_BY:= is *ready* — nothing known
+stands between it and being worked today. A node with one or more
+unsatisfied =:BLOCKED_BY:= entries (any pointing at a still-=TODO= node)
+isn't ready yet — that's the whole point of writing the edge down
+instead of discovering the gap mid-work.
 
 ** Open vs. Closed Issues
-- *Open (=TODO=)*: heading + =:ID:= drawer + a short description of
-  the problem, with no walkthrough link yet. This is a filed issue —
-  something worth documenting the next time it's actually solved.
+- *Open (=TODO=)*: heading + =:ID:= drawer + a =*End-State:*= line (see
+  Backward-Chained Filing, below) + a short description of the problem,
+  with no walkthrough link yet. This is a filed issue — something worth
+  documenting the next time it's actually solved.
 - *Closed (=DONE=)*: the same node, plus a =- *Walkthrough:*
   [[file:<uuid>/walkthrough.org][...]]= line pointing at its package
   directory.
@@ -114,23 +119,56 @@ the moment it happens, not just a rule to remember while filing whatever
 issue comes next:
 
 1. *Review every open (=TODO=) node* against the new direction. One that
-   no longer matters gets pruned (Best Practice 3, below); one that
-   still matters but no longer belongs where it is gets reordered, not
-   left in place out of inertia.
-2. *Reorder the affected =TODO= nodes' =:STEP:=* to match the new
-   intended build sequence — see the =CRITICAL RULE=s under The Step
-   Property, above. Never touch a =DONE= node's =:STEP:= while doing
+   no longer matters gets pruned (Best Practice 3, below — remember to
+   remove it from every =:BLOCKED_BY:= that names it too); one that
+   still matters but the new direction changes what's actually in its
+   way gets rewired, not left pointing at a blocker that no longer
+   applies.
+2. *Rewire =:BLOCKED_BY:= edges to match the new understanding* — add an
+   edge for a prerequisite the pivot introduces, remove one that no
+   longer holds. Never touch a =DONE= node's =:BLOCKED_BY:= while doing
    this; the pivot changes what's still ahead, not what already
    happened.
-3. *File new issues the pivot introduces* the usual way (Best Practice
-   6, below): next unused =:STEP:=, then fold into step 2's reorder if
-   the new issue actually belongs earlier than the end of the queue.
+3. *File whatever new issues the pivot introduces*, working backward
+   from the new end-state — see Backward-Chained Filing, below.
 4. *Run the validator* once the dust settles, same as any other edit to
    =index.org=.
 
 Skipping this checkpoint is how an index quietly goes stale — the
-=:STEP:= sequence keeps existing, but stops describing the order anyone
-actually intends to follow, which defeats its whole purpose.
+dependency graph keeps existing, but stops describing what's actually in
+the way of anything, which defeats its whole purpose.
+
+* Backward-Chained Filing
+
+When filing more than one new issue at once — a pivot, a new feature
+area, anything that isn't a single isolated fix — start from the
+end-state and work backward, not forward from whatever's already in
+front of you. Forward-filed issues describe what to build next, in
+whatever order occurs to you; worked backward from a defined end-state,
+each issue instead answers a sharper question — *what has to be real
+before this one can even start* — which is exactly the information
+=:BLOCKED_BY:= needs to be worth anything.
+
+1. *State the end-state as its own issue first* — the =*End-State:*=
+   line is the precise condition that means this whole effort is
+   actually done, not a description of the work.
+2. *Ask, recursively: what's the immediate thing that has to be true
+   before this issue could even start?* File that as a separate issue,
+   and set the first issue's =:BLOCKED_BY:= to point at it.
+3. *Repeat on the new issue*, walking backward, until the honest answer
+   is "nothing — this can start against the project as it exists right
+   now." That issue gets no =:BLOCKED_BY:= — it's the root, ready to
+   work today.
+4. *Wire the edges as you go, not after the fact* — every issue in the
+   chain except that root should come out of this process with a
+   non-empty =:BLOCKED_BY:= pointing at whatever you just filed to
+   unblock it.
+
+This is deliberately not a forecasting exercise — don't invent
+hypothetical future blockers for a simple, single-issue fix. It's for
+the case where you already know there's real structure here, and filing
+forward would just mean discovering the missing prerequisite mid-work
+instead of before starting.
 
 * Index Template
 
@@ -143,18 +181,26 @@ actually intends to follow, which defeats its whole purpose.
   <One line describing what this domain covers.>
 
 ** <Subcategory>
-*** TODO <Problem Title>                                     :some-tag:
+*** TODO <Problem Title, Blocked>                            :some-tag:
     :PROPERTIES:
-    :ID:       xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    :STEP:     1
+    :ID:          xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    :BLOCKED_BY:  zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz
     :END:
+    *End-State:* <the precise condition that means this is done>
+    One or two sentences on what the problem is and why it matters.
+
+*** TODO <Problem Title, Ready Now>
+    :PROPERTIES:
+    :ID:          zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz
+    :END:
+    *End-State:* <the precise condition that means this is done>
     One or two sentences on what the problem is and why it matters.
 
 *** DONE <Another Problem Title>
     :PROPERTIES:
     :ID:       yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
-    :STEP:     2
     :END:
+    *End-State:* <the precise condition that means this is done>
     One or two sentences on what the problem is and why it matters.
     - *Walkthrough:* [[file:yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy/walkthrough.org][Another Problem Title]]
 #+END_SRC
@@ -179,28 +225,34 @@ actually intends to follow, which defeats its whole purpose.
    subcategories, for a topic that cuts across more than one.
 3. *Prune stale open issues* — if a filed topic turns out not to be
    worth documenting, remove it rather than letting the index
-   accumulate dead entries.
+   accumulate dead entries. Remove it from every =:BLOCKED_BY:= that
+   named it too (see The Blocked By Property, above) — a dangling
+   reference is a hard validator failure, not just untidy.
 4. *Consistent naming*: heading text should be the same imperative,
    specific problem statement used as the =#+TITLE:= of the closed
    issue's =walkthrough.org=.
 5. *Run the validator* after editing =index.org= —
    =SCRIPTS/validate-walkthroughs.py= checks every node has a valid,
-   unique =:ID:=, a valid, unique =:STEP:=, that DONE nodes have a matching
-   package directory, and that TODO nodes don't. It catches exactly the
-   mistakes the CRITICAL RULEs above are trying to prevent, mechanically
-   instead of by memory.
-6. *When filing a new issue, start by assigning the next unused =:STEP:=*
-   — check the highest =:STEP:= currently in =index.org= and use one more
-   than that, regardless of which =:ID:= is oldest or which subcategory
-   the new issue lands in. The sequence is global across the whole index,
-   not per subcategory. If the new issue actually belongs earlier in the
-   build order, follow up with Best Practice 7 rather than leaving it
-   parked at the end.
-7. *Reorder =TODO= =:STEP:=s as priorities shift* — when an ongoing
-   project changes the order remaining issues should actually be tackled
-   in, renumber the affected =TODO= nodes to match. This is expected
-   maintenance, not a mistake to avoid: a stale sequence that no longer
-   reflects the real intended order is worse than a renumbered one. Leave
-   every =DONE= node's =:STEP:= untouched, and re-run the validator
-   afterward to confirm the renumbering didn't collide with an existing
-   value.
+   unique =:ID:=, that every =:BLOCKED_BY:= UUID resolves to a real node
+   with no cycles, that DONE nodes have a matching package directory,
+   and that TODO nodes don't. It catches exactly the mistakes the
+   CRITICAL RULEs above are trying to prevent, mechanically instead of
+   by memory.
+6. *Write the =*End-State:*= line as a condition, not a task* — "the
+   webhook handler is idempotent under duplicate delivery," not "add
+   idempotency to the webhook handler." The first is checkable; the
+   second just restates the heading. Not mechanically checked (like the
+   walkthrough's own =*Why:*= line quality) — it's worth the discipline
+   anyway, since a vague end-state produces a vague =:BLOCKED_BY:= graph.
+7. *Add =*Anti-Goals:*= only when scope is genuinely ambiguous* — a
+   short list of "explicitly not this" lines, directly under
+   =*End-State:*=, for an issue big or vague enough that a future
+   expansion (see [[file:02-expansion-guide.org][02-expansion-guide.org]])
+   could plausibly scope-creep. Most issues don't need this; a one-line
+   fix has no ambiguous scope to contain.
+8. *Don't wire a =:BLOCKED_BY:= edge you're not sure about* — an
+   incorrect edge is worse than a missing one: a missing edge just means
+   the graph doesn't yet know about a real constraint (discoverable once
+   you actually start the work), while an incorrect edge actively stops
+   a ready issue from looking ready. When genuinely unsure, leave it
+   unwired and note the uncertainty in the issue body instead.

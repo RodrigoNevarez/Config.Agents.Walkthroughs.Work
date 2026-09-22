@@ -42,13 +42,16 @@ not yet =mined=; =SCRIPTS/context-mine.py= refuses to flip a file to
 | =TODO= | Filed, no walkthrough package exists yet.  | =DONE=     | Expand it: create the package dir + =walkthrough.org=, close the node. | 02-expansion-guide.org, "Expansion Workflow" |
 | =DONE= | A walkthrough package exists — this says *nothing* about whether its checklist is worked yet. | (terminal, but see Walkthrough Package below) | — | 00-conventions.org, "Issue-Tracker Mental Model" |
 
-The =:STEP:= property is a second, semi-independent axis: a =TODO=
-node's =:STEP:= is a mutable plan (reorder freely as priorities shift), a
-=DONE= node's =:STEP:= is locked forever — see 01-index-guide.org's "The
-Step Property" for the full reasoning and what to do when a later-filed
-issue actually needs to precede an already-=DONE= one (a bridging
-"Pause Point" checklist step in the dependent walkthrough, never a
-renumber — see How the Three Interact, below).
+The =:BLOCKED_BY:= property is a second, semi-independent axis: a =TODO=
+node's =:BLOCKED_BY:= is a live, freely-rewired understanding of what's
+actually in its way right now; a =DONE= node's is locked forever — see
+01-index-guide.org's "The Blocked By Property" for the full reasoning. A
+prerequisite discovered *after* some other node already closed needs no
+special handling — file it as its own issue and wire =:BLOCKED_BY:= on
+whatever open node it actually blocks; the closed node is untouched
+either way, since a real dependency graph (unlike the flat =:STEP:=
+sequence it replaced) never required every node to have a position
+relative to every other one.
 
 ** Walkthrough Package
 
@@ -71,13 +74,10 @@ CRITICAL RULE that the export is a claim, not a record.
   citing file can be an =index.org= issue's own description or its
   expanded =walkthrough.org=; either satisfies "The Context Index"'s
   requirement, since a walkthrough *is* the issue, expanded.
-- A =DONE= index node's =:STEP:= is permanent, which means a prerequisite
-  discovered *after* that node closed can't be renumbered ahead of it —
-  it becomes its own new issue at a later =:STEP:=, cited back from the
-  dependent walkthrough as a "Pause Point" checklist step ("stop here,
-  resolve issue X first"). This isn't a workaround; it's the documented
-  way non-contiguous =:STEP:= ordering is supposed to work (01-index-guide.org,
-  "The Step Property").
+- A =DONE= index node's =:BLOCKED_BY:= is permanent — a prerequisite
+  discovered after that node closed just becomes a new issue wired to
+  whatever *open* node it actually blocks, never a reason to touch the
+  closed node (01-index-guide.org, "The Blocked By Property").
 - Archiving a walkthrough package can break a =file:= link *inside a
   different, already-settled outcome* that cited it at its pre-archive
   path — 04-archive-guide.org's Archive Workflow step 9 exists

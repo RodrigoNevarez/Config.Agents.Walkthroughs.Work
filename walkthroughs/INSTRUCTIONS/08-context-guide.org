@@ -113,7 +113,7 @@ entry's own =:ID:= in that issue's =index.org=, produced with =uuidgen=
 (or the Python fallback in 00-conventions.org's UUID Convention), never
 hand-typed. The extension stays whatever the material actually arrived
 in (=.md=, =.txt=, =.org=, ...) — same reasoning as a SESH export never
-being converted to =.org= (00-conventions.org changelog, v6): the file is
+being converted to =.org=: the file is
 raw evidence, not a package artifact. A generic filename plus the
 descriptive sentence in the index entry keeps the file itself
 uninformative on its own, exactly like a walkthrough package directory

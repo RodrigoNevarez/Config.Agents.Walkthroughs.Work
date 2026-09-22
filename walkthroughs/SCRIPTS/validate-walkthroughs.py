@@ -75,27 +75,10 @@ def extract_drawer_id(lines, start, stop):
     return id_val
 
 
-def extract_drawer_step(lines, start, stop):
-    """First :STEP: value inside a :PROPERTIES:...:END: drawer in lines[start:stop]."""
-    in_drawer = False
-    step_val = None
-    for line in lines[start:stop]:
-        s = line.strip()
-        if s == ":PROPERTIES:":
-            in_drawer = True
-            continue
-        if s == ":END:":
-            in_drawer = False
-            continue
-        if in_drawer and re.match(r"^:STEP:\s*", s, re.I):
-            step_val = re.sub(r"^:STEP:\s*", "", s, flags=re.I).strip()
-    return step_val
-
-
 def extract_drawer_field(lines, start, stop, field):
     """First :<field>: value inside a :PROPERTIES:...:END: drawer in
-    lines[start:stop]. Generic version of extract_drawer_id/_step, used
-    for context_index.org's :SOURCE:/:STATUS: fields."""
+    lines[start:stop]. Generic version of extract_drawer_id, used for
+    index.org's :BLOCKED_BY: and CONTEXT's :SOURCE:/:STATUS: fields."""
     in_drawer = False
     val = None
     pattern = re.compile(rf"^:{re.escape(field)}:\s*", re.I)
@@ -112,20 +95,6 @@ def extract_drawer_field(lines, start, stop, field):
     return val
 
 
-seen_steps = {}  # int -> first location string, index.org's own :STEP: sequence
-
-
-def register_step(step_val, location):
-    if not re.match(r"^\d+$", step_val or ""):
-        fail(f"{location}: ':STEP:' value '{step_val}' is not a positive integer")
-        return
-    key = int(step_val)
-    if key in seen_steps:
-        fail(f"{location}: ':STEP:' {key} collides with {seen_steps[key]}")
-    else:
-        seen_steps[key] = location
-
-
 def current_guide_version():
     if not CONVENTIONS.exists():
         fail(f"{CONVENTIONS.relative_to(ROOT)}: file is missing")
@@ -139,7 +108,7 @@ def current_guide_version():
 
 
 def validate_index():
-    """Returns {uuid: {"state", "title", "has_link", "loc"}}."""
+    """Returns {uuid: {"state", "title", "has_link", "loc", "blocked_by"}}."""
     node_ids = {}
     if not INDEX.exists():
         fail(f"{INDEX.relative_to(ROOT)}: file is missing")
@@ -165,11 +134,8 @@ def validate_index():
             continue
         register_uuid(node_id, loc)
 
-        step_val = extract_drawer_step(lines, i + 1, next_idx)
-        if not step_val:
-            fail(f"{loc}: node '{title}' has no :STEP: property")
-        else:
-            register_step(step_val, loc)
+        blocked_by_val = extract_drawer_field(lines, i + 1, next_idx, "BLOCKED_BY")
+        blocked_by = blocked_by_val.split() if blocked_by_val else []
 
         has_link = any(
             f"file:{node_id}/walkthrough.org" in l
@@ -181,13 +147,53 @@ def validate_index():
             "title": title,
             "has_link": has_link,
             "loc": loc,
+            "blocked_by": blocked_by,
         }
         if state == "DONE" and not has_link:
             fail(f"{loc}: DONE node '{title}' has no walkthrough link")
         if state == "TODO" and has_link:
             warn(f"{loc}: TODO node '{title}' has a walkthrough link — should this be DONE?")
 
+    validate_dependency_graph(node_ids)
     return node_ids
+
+
+def validate_dependency_graph(node_ids):
+    """See 01-index-guide.org's 'The Blocked By Property': every
+    :BLOCKED_BY: UUID must resolve to a real node, and the graph they
+    form must be acyclic. Plain DFS with a 3-color scheme is enough here
+    — this graph is small enough that Tarjan's SCC machinery would be
+    solving a problem of a scale this system never reaches."""
+    by_lower = {k.lower(): k for k in node_ids}
+
+    for node_id, info in node_ids.items():
+        for blocker in info["blocked_by"]:
+            if blocker.lower() not in by_lower:
+                fail(
+                    f"{info['loc']}: node '{info['title']}' has "
+                    f":BLOCKED_BY: {blocker}, which doesn't match any "
+                    f"index.org node"
+                )
+
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color = {nid: WHITE for nid in node_ids}
+
+    def visit(nid, path):
+        color[nid] = GRAY
+        for blocker in node_ids[nid]["blocked_by"]:
+            key = by_lower.get(blocker.lower())
+            if key is None:
+                continue  # already reported above
+            if color[key] == GRAY:
+                cycle = " -> ".join(path + [node_ids[key]["title"]])
+                fail(f"circular :BLOCKED_BY: dependency: {cycle}")
+            elif color[key] == WHITE:
+                visit(key, path + [node_ids[key]["title"]])
+        color[nid] = BLACK
+
+    for nid in node_ids:
+        if color[nid] == WHITE:
+            visit(nid, [node_ids[nid]["title"]])
 
 
 def find_package_dirs():
@@ -378,7 +384,7 @@ def validate_supporting_files(dir_path, wt_text):
     """Every NN-<tool>-SESH.<ext> export in a package dir must be linked
     from that package's walkthrough.org (External Session Workflow rule).
     Any extension is fine — the export stays in its native format, never
-    converted to .org (see 00-conventions.org's Changelog, v6)."""
+    converted to .org."""
     for p in dir_path.iterdir():
         if not p.is_file() or p.name == "walkthrough.org":
             continue

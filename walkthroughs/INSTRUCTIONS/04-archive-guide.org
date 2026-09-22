@@ -32,7 +32,7 @@ becomes read-only reference material, the same way a raw CONTEXT research
 file is: cited by some later issue if it's still relevant, but never
 itself worked again. If a settled decision turns out to be wrong or needs
 revisiting, that becomes a *new* issue, never a reopening of this one —
-same permanence as a =DONE= node's =:STEP:= in
+same permanence as a =DONE= node's =:BLOCKED_BY:= in
 [[file:01-index-guide.org][01-index-guide.org]]. Because of that, =* For
 AI Assistants= and =* Search Prompts= — both written to brief an AI or
 human about to *work* the file — no longer serve any purpose and are
