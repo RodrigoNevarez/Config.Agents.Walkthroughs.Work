@@ -2,8 +2,9 @@
 #+DATE: 2026-08-21
 
 Single source of truth for archiving a fully-settled walkthrough package —
-consolidating it from a working directory into a single flat file once
-there's nothing left to actively reconcile. Referenced by
+folding it into the same [[file:08-context-guide.org][CONTEXT]] directory
+that already holds the research behind it, once there's nothing left to
+actively reconcile. Referenced by
 [[file:02-expansion-guide.org][02-expansion-guide.org]] instead of
 restating it, same principle as
 [[file:00-conventions.org][00-conventions.org]].
@@ -15,13 +16,27 @@ plus whatever session exports and detail files accumulate while it's
 actively being reconciled. Once it's genuinely done, that scaffolding has
 served its purpose: keeping it around forever just makes the active
 working set (the top level of =.agents/walkthroughs/=) harder to scan as
-completed packages pile up. Archiving flattens a settled package into one
-file, moved out of the way, without losing anything that still matters.
+completed packages pile up.
 
-Archiving is a storage-shape change, not a statement that the topic is
-closed off. The =For AI Assistants= briefing keeps working exactly the same
-on an archived file — it can still be dragged into a future session like any
-other walkthrough.
+Archiving folds a settled package into
+=.agents/walkthroughs/CONTEXT/<uuid>/outcome.org= — the same
+per-issue-UUID directory that already holds the research staged for it
+(see [[file:08-context-guide.org][08-context-guide.org]]). Research and
+outcome end up living in one place per issue, instead of a walkthrough
+package and its CONTEXT directory being two disjoint trees that happen to
+share a UUID.
+
+*Archiving is closure, not a storage-shape change.* Once settled, a
+walkthrough is never resumed or dragged back into an active session — it
+becomes read-only reference material, the same way a raw CONTEXT research
+file is: cited by some later issue if it's still relevant, but never
+itself worked again. If a settled decision turns out to be wrong or needs
+revisiting, that becomes a *new* issue, never a reopening of this one —
+same permanence as a =DONE= node's =:STEP:= in
+[[file:01-index-guide.org][01-index-guide.org]]. Because of that, =* For
+AI Assistants= and =* Search Prompts= — both written to brief an AI or
+human about to *work* the file — no longer serve any purpose and are
+stripped before archiving (see the Archive Workflow, below).
 
 * When to Archive
 
@@ -42,9 +57,9 @@ other walkthrough.
    (=*-SESH.<ext>=) file's pedagogically relevant content — hesitations,
    wrong first guesses, raw output not already captured in a step's own
    =*Result:*= block — must already be reflected in the walkthrough's own
-   checklist before that SESH file is deleted. The archived file is going
-   to be the *only* surviving record of this package; if evidence exists
-   solely in a SESH file, deleting it is data loss, not cleanup.
+   checklist before that SESH file is deleted. The settled outcome is
+   going to be the *only* surviving record of this package; if evidence
+   exists solely in a SESH file, deleting it is data loss, not cleanup.
 
 3. *CRITICAL RULE — step-detail files are not disposable the way SESH
    files are.* A =<step-uuid>.org= detail file (see Step-Level Expansion
@@ -64,78 +79,110 @@ other walkthrough.
    from individual steps). Grep for the SESH filename before deleting it,
    and rewrite every hit as plain text (e.g. "worked in an external Gemini
    session, export pruned on archiving") rather than leaving a link into
-   nothing. A dangling link in the archived file is worse than one in an
+   nothing. A dangling link in the settled outcome is worse than one in an
    active package directory — there's no longer a directory listing next
    to it that would make the breakage obvious.
    #+begin_src sh
    grep -rn "01-GEMINI-SESH" .agents/walkthroughs/<uuid>/walkthrough.org
    #+end_src
 
-5. Move and flatten:
-   #+begin_src sh
-   mkdir -p .agents/walkthroughs/archive
-   mv .agents/walkthroughs/<uuid>/walkthrough.org \
-      .agents/walkthroughs/archive/<uuid>.org
-   #+end_src
+5. *CRITICAL RULE — strip For AI Assistants and Search Prompts before
+   moving.* Both sections exist to brief someone about to work the file;
+   a settled outcome is never worked again (see Purpose, above). Delete
+   =* For AI Assistants= and =* Search Prompts= in their entirety from
+   the walkthrough's content. Everything else stays exactly as written —
+   Problem, the worked Guide checklist with its real =*Result:*= blocks,
+   and Notes (including any =*Decision:*= entries, which are usually the
+   most useful citable content in the whole file) — this is a section
+   removal, not a rewrite of anything that survives it.
 
-6. Delete the now-superseded supporting files and the now-empty package
+6. Create the issue's =CONTEXT/<uuid>/= subdirectory if it doesn't
+   already exist — it may well already hold research staged for this same
+   issue (see [[file:08-context-guide.org][08-context-guide.org]]'s
+   Naming & Lifecycle) — then move and rename:
+   #+begin_src sh
+   mkdir -p .agents/walkthroughs/CONTEXT/<uuid>
+   mv .agents/walkthroughs/<uuid>/walkthrough.org \
+      .agents/walkthroughs/CONTEXT/<uuid>/outcome.org
+   #+end_src
+   =outcome.org= is a fixed name, not the UUID — the directory itself
+   already carries that identity, same reasoning as every other filename
+   in this system staying generic while the UUID lives in the path (see
+   00-conventions.org's UUID Convention). It does *not* get an entry in
+   that directory's own =index.org= — unlike a raw research file, it never
+   goes through the =proposed=/=approved=/=mined= review pipeline; it
+   graduated from the full expansion-and-work pipeline already, and its
+   identity comes from its fixed filename plus the directory's UUID alone.
+
+7. Delete the now-superseded supporting files and the now-empty package
    directory:
    #+begin_src sh
    rm .agents/walkthroughs/<uuid>/*-SESH.*
    rmdir .agents/walkthroughs/<uuid>
    #+end_src
    (=rmdir=, not =rm -rf= — it only succeeds if the directory is actually
-   empty, which doubles as confirmation nothing was missed in steps 2-4.)
+   empty, which doubles as confirmation nothing was missed in steps 2-5.)
 
-7. Update the =index.org= link for this node from
-   =file:<uuid>/walkthrough.org= to =file:archive/<uuid>.org= — the =DONE=
-   state itself doesn't change, only the link target.
+8. Update the =index.org= link for this node from
+   =file:<uuid>/walkthrough.org= to =file:CONTEXT/<uuid>/outcome.org= —
+   the =DONE= state itself doesn't change, only the link target.
 
-8. *CRITICAL RULE — check every other archived file for links pointing at
-   this package's pre-archive path.* Any earlier-archived walkthrough that
-   ever cited this one as an active package (=file:../<uuid>/walkthrough.org=)
-   now has a dangling link, since this package just moved to
-   =archive/<uuid>.org=. This is not the "never rewritten" rule being
-   violated — updating a =file:= link's *path* to follow where something
-   moved is exactly what step 7 above already does for =index.org= itself;
-   an already-archived file's own prose, decisions, and =*Result:*= blocks
-   still never change, only a stale address. Grep the whole archive
-   directory, not just the package being archived:
+9. *CRITICAL RULE — check every other settled outcome for links pointing
+   at this package's pre-archive path.* Any earlier-settled walkthrough
+   that ever cited this one as an active package
+   (=file:../<uuid>/walkthrough.org=) now has a dangling link, since this
+   package just moved to =CONTEXT/<uuid>/outcome.org=. This is not the
+   "never rewritten" rule being violated — updating a =file:= link's
+   *path* to follow where something moved is exactly what step 8 above
+   already does for =index.org= itself; an already-settled file's own
+   prose, decisions, and =*Result:*= blocks still never change, only a
+   stale address. Grep every settled outcome, not just the package being
+   archived:
    #+begin_src sh
-   grep -rln "<uuid>/walkthrough.org" .agents/walkthroughs/archive/
+   grep -rln "<uuid>/walkthrough.org" .agents/walkthroughs/CONTEXT/*/outcome.org
    #+end_src
    For each hit, update only the path
-   (=../<uuid>/walkthrough.org= → =../archive/<uuid>.org=), nothing else.
-   Found by hitting this exact case: archiving the seed-data tool
-   walkthrough broke a citation inside the already-archived =.NET SDK=
-   walkthrough, which =validate-walkthroughs.py='s unconditional
-   link-integrity check caught as a hard failure immediately.
+   (=../<uuid>/walkthrough.org= → =../CONTEXT/<uuid>/outcome.org=), nothing
+   else.
 
-9. Run the validator.
+10. Run the validator.
 
 * What the Validator Checks
 
-- An archived file's name (=<uuid>.org=) must be a valid UUID matching
-  some =index.org= node's own =:ID:=, and that node must be =DONE= — same
-  requirement as an active package directory, just checked against
-  =archive/<uuid>.org= instead of =<uuid>/walkthrough.org=.
-- A UUID must resolve to exactly *one* location — either the active
-  =<uuid>/= directory or =archive/<uuid>.org=, never both. A leftover
-  directory after archiving is a hard failure (archiving is a move, not a
-  copy), not a warning.
-- Everything else — required sections, step =:ID:=s, =*Result:*= blocks,
-  guide-version gating — is checked identically to an unarchived
-  =walkthrough.org=. Archiving changes where the file lives and what it's
-  named, not what's required inside it.
-- There is no supporting-files check for an archived package (no
+- A settled outcome (=CONTEXT/<uuid>/outcome.org=) must sit in a
+  subdirectory whose name is a valid UUID matching some =index.org=
+  node's own =:ID:=, and that node must be =DONE= — same requirement as
+  an active package directory, just checked against
+  =CONTEXT/<uuid>/outcome.org= instead of =<uuid>/walkthrough.org=.
+- A UUID must resolve to exactly *one* active location — either the
+  active =<uuid>/= directory or =CONTEXT/<uuid>/outcome.org=, never both.
+  A leftover package directory after archiving is a hard failure
+  (archiving is a move, not a copy), not a warning.
+- Problem, the Guide checklist, step =:ID:=s, and =*Result:*= blocks are
+  checked identically to an unarchived =walkthrough.org=. Archiving
+  changes where the file lives, what it's named, and *removes* two
+  sections — it doesn't loosen what's required of the sections that
+  remain.
+- =* For AI Assistants= and =* Search Prompts= are the opposite of
+  required on a settled outcome — =SCRIPTS/validate-walkthroughs.py=
+  *fails* a =CONTEXT/<uuid>/outcome.org= that still has either one, the
+  mechanical enforcement of CRITICAL RULE 5 above.
+- There is no supporting-files check for a settled outcome (no
   =NN-<tool>-SESH.<ext>= linking rule to enforce) — by design, nothing but
-  the single =.org= file survives archiving.
-- An archived file must contain *no* =[[file:...-SESH.<ext>...]]= link at
-  all — since a SESH file can never legitimately exist next to an archived
-  =.org= file, any such link is guaranteed dangling. This is the
-  mechanical version of CRITICAL RULE 4 above; it exists because that rule
-  was originally missed while writing this guide and only caught by
-  actually running the archive workflow once.
+  the single =outcome.org= file survives archiving into its CONTEXT
+  directory.
+- A settled outcome must contain *no* =[[file:...-SESH.<ext>...]]= link at
+  all — since a SESH file can never legitimately exist next to it, any
+  such link is guaranteed dangling. This is the mechanical version of
+  CRITICAL RULE 4 above.
+- =outcome.org= itself is exempt from
+  [[file:08-context-guide.org][08-context-guide.org]]'s "every CONTEXT
+  file needs an =index.org= entry" check — it's the one file in a
+  =CONTEXT/<uuid>/= directory that doesn't participate in the
+  =:SOURCE:=/=:STATUS:= review pipeline (see Archive Workflow step 6,
+  above). A =CONTEXT/<uuid>/= subdirectory whose *only* file is
+  =outcome.org= doesn't need an =index.org= at all — there's nothing to
+  index.
 
 * Best Practices
 
@@ -143,8 +190,12 @@ other walkthrough.
 2. Reconcile fully before deleting anything — the two CRITICAL RULEs in
    the Archive Workflow exist because deletion here is not easily
    reversible; get it right before running =rm=.
-3. Don't strip the =For AI Assistants= section on archive — same rule as
-   [[file:02-expansion-guide.org][02-expansion-guide.org]]'s Best
-   Practices already state for an active package.
+3. *Do strip =For AI Assistants= and =Search Prompts= on archive* —
+   reversed from this guide's own earlier position, which said not to.
+   That earlier rule assumed a settled walkthrough might still be dragged
+   back into an active session; this system's actual usage never does
+   that — a correction always becomes a new issue, never a reopening of
+   an old one (see Purpose, above) — so the briefing meant for an active
+   worker is dead weight on something no one will ever work again.
 4. Run the validator after archiving, same as any other change to this
    system.

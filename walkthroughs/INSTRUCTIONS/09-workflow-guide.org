@@ -56,8 +56,8 @@ renumber — see How the Three Interact, below).
 |-----------------+---------------------------------------------------+-----------------+-------------------------------------------------------+-------------------------------------------|
 | unworked        | =walkthrough.org= exists, checklist is =[0/n]=.  | in-progress     | A step gets checked with a real =*Result:*=.        | 02-expansion-guide.org, "Guide" section  |
 | in-progress     | Some steps checked, at least one still isn't.    | fully checked   | Every remaining step gets a real =*Result:*=.       | same                                     |
-| fully checked   | =[n/n]=, heading reads =DONE=.                   | archived        | Index node is already =DONE= *and* checklist is fully checked. | 04-archive-guide.org, "When to Archive" |
-| archived        | Flattened to =archive/<uuid>.org=, SESH files pruned. | (terminal) | —                                                    | 04-archive-guide.org, "Archive Workflow" |
+| fully checked   | =[n/n]=, heading reads =DONE=.                   | settled/archived | Index node is already =DONE= *and* checklist is fully checked. | 04-archive-guide.org, "When to Archive" |
+| settled/archived | Folded into =CONTEXT/<uuid>/outcome.org= (=For AI Assistants=/=Search Prompts= stripped, SESH files pruned) — permanently read-only, never resumed; a correction becomes a new issue instead. | (terminal) | — | 04-archive-guide.org, "Archive Workflow" |
 
 A session export (=NN-<tool>-SESH.<ext>=) reconciling into real
 =*Result:*= blocks is what actually moves unworked/in-progress steps
@@ -79,14 +79,20 @@ CRITICAL RULE that the export is a claim, not a record.
   way non-contiguous =:STEP:= ordering is supposed to work (01-index-guide.org,
   "The Step Property").
 - Archiving a walkthrough package can break a =file:= link *inside a
-  different, already-archived package* that cited it at its pre-archive
-  path — 04-archive-guide.org's Archive Workflow step 8 exists
+  different, already-settled outcome* that cited it at its pre-archive
+  path — 04-archive-guide.org's Archive Workflow step 9 exists
   specifically to catch this every time, not just when it happens to get
   noticed.
 - A walkthrough reaching "fully checked" doesn't archive itself — archiving
   is a separate, deliberate action (see 04-archive-guide.org's "When to
   Archive"), so a fully-checked package sitting unarchived for a while is
   normal, not a sign anything's wrong.
+- A settled =CONTEXT/<uuid>/outcome.org= is a different kind of thing from
+  the =proposed=/=approved=/=mined= research entries tracked in that same
+  directory's =index.org= (CONTEXT File, above) — it never enters that
+  review pipeline, and it's permanent the moment it's written, not just
+  eventually =mined=. See 04-archive-guide.org's "What the Validator
+  Checks."
 
 * Quick Reference: "I want to..."
 

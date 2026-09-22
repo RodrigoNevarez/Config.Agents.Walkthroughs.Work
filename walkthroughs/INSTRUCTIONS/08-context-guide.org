@@ -17,11 +17,13 @@ because of a given issue lives together in that issue's own subdirectory,
 never loose at =CONTEXT/='s top level.
 
 CONTEXT holds raw, unsorted material on its way to becoming something
-else — an issue, and later a walkthrough, whose own archived record
-(see [[file:04-archive-guide.org][04-archive-guide.org]]) is what settles
-into durable history once the work is done. A CONTEXT file that never
-produces anything should not linger indefinitely (see Naming &
-Lifecycle, below).
+else — an issue, and later a walkthrough. Once that walkthrough is fully
+worked, it settles right back into this same directory too: see
+[[file:04-archive-guide.org][04-archive-guide.org]]'s Archive Workflow —
+a =CONTEXT/<uuid>/outcome.org= sitting alongside that issue's own research
+is the durable history of the whole issue, in one place, not restated
+here. A CONTEXT file that never produces anything should not linger
+indefinitely (see Naming & Lifecycle, below).
 
 * Two Directions
 
@@ -238,4 +240,7 @@ that decision, not the decision itself.
    globally unique =:ID:=, a valid =:SOURCE:=/=:STATUS:=, a =file:= link
    that resolves, that no real CONTEXT file is missing its entry, and
    that the subdirectory itself is named after a real =index.org= node's
-   UUID.
+   UUID. A settled =outcome.org= (see
+   [[file:04-archive-guide.org][04-archive-guide.org]]) is the one
+   exception to "no real CONTEXT file is missing its entry" — it doesn't
+   get one, by design.

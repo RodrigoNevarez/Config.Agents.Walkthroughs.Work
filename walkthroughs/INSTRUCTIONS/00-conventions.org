@@ -1,5 +1,5 @@
 #+TITLE: Walkthrough Shared Conventions
-#+WALKTHROUGH_GUIDE_VERSION: 25
+#+WALKTHROUGH_GUIDE_VERSION: 26
 
 Single source of truth for conventions shared by
 [[file:01-index-guide.org][01-index-guide.org]] (the index),
@@ -112,6 +112,42 @@ failure, so staleness stays visible instead of silent.
 
 ** Changelog
 
+- *v26* (2026-09-18): Merged archiving into CONTEXT. A settled walkthrough
+  no longer moves to a flat =archive/<uuid>.org=; it folds into
+  =.agents/walkthroughs/CONTEXT/<uuid>/outcome.org= — the same
+  per-issue-UUID directory that already holds the research behind that
+  issue (=archive/= as a top-level directory no longer exists). =outcome.org=
+  is a fixed name, not the UUID (the directory already carries that
+  identity), and does *not* get a =:SOURCE:=/=:STATUS:= entry in that
+  directory's own =index.org= — it never enters the
+  =proposed=/=approved=/=mined= review pipeline raw research does, having
+  already graduated from the full expansion-and-work pipeline. Philosophy
+  reversed from [[file:04-archive-guide.org][04-archive-guide.org]]'s
+  prior explicit position: archiving used to be framed as a pure
+  storage-shape change ("can still be dragged into a future session like
+  any other walkthrough," Best Practice 3 said not to strip =For AI
+  Assistants=); it's now framed as closure — a settled outcome is
+  permanently read-only and never resumed, so =* For AI Assistants= and
+  =* Search Prompts= (both written to brief someone about to *work* the
+  file) are stripped as a new CRITICAL RULE in the Archive Workflow, and
+  =SCRIPTS/validate-walkthroughs.py='s =validate_walkthrough()= now takes
+  a =settled= flag that *fails* a settled outcome still carrying either
+  section, the mirror image of requiring them on an active package.
+  =find_archived_packages()=/=ARCHIVE_DIR=/=ARCHIVE_FILE_RE= are removed;
+  =find_settled_outcomes()= scans =CONTEXT/<uuid>/outcome.org= instead,
+  and =validate_context_subdir()= exempts =outcome.org= from the "every
+  CONTEXT file needs an index.org entry" check (a subdirectory holding
+  only a settled outcome doesn't need an =index.org= at all). Requested
+  directly, from the observation that =archive/<uuid>.org= and
+  =CONTEXT/<uuid>/= were already two disjoint trees keyed by the exact
+  same UUID, and confirmed against real usage: a settled decision is
+  never reopened — correcting or reverting one always becomes a brand-new
+  issue instead, which is exactly the CONTEXT model already assumes for
+  cited-but-never-mutated material. A forward-pointer/supersession
+  mechanism (flagging an old outcome as superseded by a newer issue) was
+  considered and explicitly rejected: this archive is a personal learning
+  record, not a live reference graph, so staleness tracking isn't worth
+  the added mechanism.
 - *v25* (2026-09-18): Removed the wiki module
   ([[file:05-wiki-guide.org][05-wiki-guide.org]], =.agents/wikis/=)
   entirely, along with every cross-reference to it. Requested directly,

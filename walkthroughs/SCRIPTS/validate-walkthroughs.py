@@ -15,20 +15,17 @@ WT_DIR = Path(__file__).resolve().parent.parent
 ROOT = WT_DIR.parent.parent
 INDEX = WT_DIR / "index.org"
 CONVENTIONS = WT_DIR / "INSTRUCTIONS" / "00-conventions.org"
-ARCHIVE_DIR = WT_DIR / "archive"
 CONTEXT_DIR = WT_DIR / "CONTEXT"
-SKIP_DIRS = {"INSTRUCTIONS", "SCRIPTS", "archive", "CONTEXT", "inbox"}
+SKIP_DIRS = {"INSTRUCTIONS", "SCRIPTS", "CONTEXT", "inbox"}
 CONTEXT_VALID_SOURCES = {"you", "agent"}
 CONTEXT_VALID_STATUSES = {"proposed", "approved", "mined"}
+OUTCOME_FILENAME = "outcome.org"
 
 UUID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I
 )
 UUID_ANY_RE = re.compile(
     r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.I
-)
-ARCHIVE_FILE_RE = re.compile(
-    r"^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.org$", re.I
 )
 SESH_RE = re.compile(r"^\d+-.+-SESH\.\w+$", re.I)
 SESH_LOOSE_RE = re.compile(r"sesh", re.I)
@@ -175,7 +172,8 @@ def validate_index():
             register_step(step_val, loc)
 
         has_link = any(
-            f"file:{node_id}/walkthrough.org" in l or f"file:archive/{node_id}.org" in l
+            f"file:{node_id}/walkthrough.org" in l
+            or f"file:CONTEXT/{node_id}/{OUTCOME_FILENAME}" in l
             for l in lines[i + 1 : next_idx]
         )
         node_ids[node_id] = {
@@ -206,38 +204,38 @@ def find_package_dirs():
     return dirs
 
 
-def find_archived_packages():
-    """{uuid: path} for archive/<uuid>.org files."""
+def find_settled_outcomes():
+    """{uuid: path} for CONTEXT/<uuid>/outcome.org files — a settled,
+    permanently read-only walkthrough record folded into the same
+    directory as the research behind it. See 04-archive-guide.org."""
     files = {}
-    if not ARCHIVE_DIR.is_dir():
+    if not CONTEXT_DIR.is_dir():
         return files
-    for p in ARCHIVE_DIR.iterdir():
-        if not p.is_file():
+    for p in CONTEXT_DIR.iterdir():
+        if not p.is_dir() or not UUID_RE.match(p.name):
             continue
-        m = ARCHIVE_FILE_RE.match(p.name)
-        if not m:
-            warn(f"{p.relative_to(ROOT)}: filename is not '<uuid>.org', skipping")
-            continue
-        files[m.group(1)] = p
+        outcome = p / OUTCOME_FILENAME
+        if outcome.is_file():
+            files[p.name] = outcome
     return files
 
 
-def cross_check(node_ids, package_dirs, archived):
-    dupes = set(package_dirs) & set(archived)
+def cross_check(node_ids, package_dirs, settled):
+    dupes = set(package_dirs) & set(settled)
     for node_id in dupes:
         fail(
             f"{node_id}: exists both as an active "
             f".agents/walkthroughs/{node_id}/ directory and as "
-            f".agents/walkthroughs/archive/{node_id}.org — archiving is a "
-            f"move, not a copy; delete the active directory"
+            f".agents/walkthroughs/CONTEXT/{node_id}/{OUTCOME_FILENAME} — "
+            f"archiving is a move, not a copy; delete the active directory"
         )
 
     for node_id, info in node_ids.items():
-        if info["state"] == "DONE" and node_id not in package_dirs and node_id not in archived:
+        if info["state"] == "DONE" and node_id not in package_dirs and node_id not in settled:
             fail(
                 f"{info['loc']}: DONE node '{info['title']}' has no matching "
                 f".agents/walkthroughs/{node_id}/ directory or "
-                f".agents/walkthroughs/archive/{node_id}.org file"
+                f".agents/walkthroughs/CONTEXT/{node_id}/{OUTCOME_FILENAME} file"
             )
     for dir_id, path in package_dirs.items():
         rel = path.relative_to(ROOT)
@@ -245,12 +243,12 @@ def cross_check(node_ids, package_dirs, archived):
             fail(f"{rel}: no matching index.org node for this UUID")
         elif node_ids[dir_id]["state"] != "DONE":
             fail(f"{rel}: package exists but index.org node is not DONE")
-    for arc_id, path in archived.items():
+    for settled_id, path in settled.items():
         rel = path.relative_to(ROOT)
-        if arc_id not in node_ids:
+        if settled_id not in node_ids:
             fail(f"{rel}: no matching index.org node for this UUID")
-        elif node_ids[arc_id]["state"] != "DONE":
-            fail(f"{rel}: archived package exists but index.org node is not DONE")
+        elif node_ids[settled_id]["state"] != "DONE":
+            fail(f"{rel}: settled outcome exists but index.org node is not DONE")
 
 
 REQUIRED_SECTIONS = ["Notes", "Search Prompts"]
@@ -264,7 +262,16 @@ REQUIRED_SECTIONS_SINCE = {
 RESULT_BLOCK_REQUIRED_SINCE = 3
 
 
-def validate_walkthrough(wt_id, path, current_version):
+FORBIDDEN_WHEN_SETTLED = ["For AI Assistants", "Search Prompts"]
+
+
+def validate_walkthrough(wt_id, path, current_version, settled=False):
+    """settled=True checks a CONTEXT/<uuid>/outcome.org (see
+    04-archive-guide.org) instead of an active walkthrough.org: Problem,
+    the Guide checklist, and Notes are still required exactly the same
+    way, but 'For AI Assistants' and 'Search Prompts' are required to be
+    *absent* instead — both brief someone about to work the file, and a
+    settled outcome is never worked again."""
     rel = path.relative_to(ROOT)
     text = path.read_text()
     lines = text.splitlines()
@@ -283,9 +290,20 @@ def validate_walkthrough(wt_id, path, current_version):
     if guide_idx is None:
         fail(f"{rel}: missing Guide checklist heading ('* TODO <title> [x/n]')")
 
-    for name in REQUIRED_SECTIONS:
-        if name not in titles:
-            fail(f"{rel}: missing '* {name}' section")
+    if settled:
+        if "Notes" not in titles:
+            fail(f"{rel}: missing '* Notes' section")
+        for name in FORBIDDEN_WHEN_SETTLED:
+            if name in titles:
+                fail(
+                    f"{rel}: has a '* {name}' section — settled outcomes "
+                    f"must have it stripped (see 04-archive-guide.org "
+                    f"Archive Workflow, CRITICAL RULE 5)"
+                )
+    else:
+        for name in REQUIRED_SECTIONS:
+            if name not in titles:
+                fail(f"{rel}: missing '* {name}' section")
 
     m = re.search(r"^#\+WALKTHROUGH_GUIDE_VERSION:\s*(\S+)", text, re.M)
     pkg_version = m.group(1) if m else None
@@ -301,16 +319,17 @@ def validate_walkthrough(wt_id, path, current_version):
         pkg_version_int = int(pkg_version) if pkg_version is not None else None
     except ValueError:
         pkg_version_int = None
-    for name, since in REQUIRED_SECTIONS_SINCE.items():
-        if (
-            pkg_version_int is not None
-            and pkg_version_int >= since
-            and name not in titles
-        ):
-            fail(
-                f"{rel}: missing '* {name}' section (required since guide "
-                f"v{since}; this package declares v{pkg_version})"
-            )
+    if not settled:
+        for name, since in REQUIRED_SECTIONS_SINCE.items():
+            if (
+                pkg_version_int is not None
+                and pkg_version_int >= since
+                and name not in titles
+            ):
+                fail(
+                    f"{rel}: missing '* {name}' section (required since guide "
+                    f"v{since}; this package declares v{pkg_version})"
+                )
 
     for i, l in top_headings:
         if UUID_ANY_RE.search(l):
@@ -380,10 +399,10 @@ def validate_supporting_files(dir_path, wt_text):
             )
 
 
-def validate_archived_no_dangling_sesh_links(path, text):
-    """A SESH export can never legitimately exist next to an archived
-    <uuid>.org file (it's deleted during archiving) — so any link to one
-    is guaranteed dangling. See 04-archive-guide.org CRITICAL RULE 4."""
+def validate_settled_no_dangling_sesh_links(path, text):
+    """A SESH export can never legitimately exist next to a settled
+    outcome.org (it's deleted during archiving) — so any link to one is
+    guaranteed dangling. See 04-archive-guide.org CRITICAL RULE 4."""
     rel = path.relative_to(ROOT)
     for m in DANGLING_SESH_LINK_RE.finditer(text):
         fail(
@@ -449,7 +468,14 @@ def validate_context_subdir(sub_dir, node_ids):
 
     index_path = sub_dir / "index.org"
     if not index_path.exists():
-        fail(f"{rel_dir}: missing index.org")
+        other_files = [
+            p for p in sub_dir.iterdir()
+            if p.is_file() and p.name != OUTCOME_FILENAME
+        ]
+        if other_files:
+            fail(f"{rel_dir}: missing index.org")
+        # Else: this subdirectory holds only a settled outcome.org (see
+        # 04-archive-guide.org) or is otherwise empty — nothing to index.
         return
 
     text = index_path.read_text()
@@ -496,7 +522,11 @@ def validate_context_subdir(sub_dir, node_ids):
                 indexed_files.add(target)
 
     for p in sub_dir.iterdir():
-        if not p.is_file() or p.name == "index.org" or p.resolve() in indexed_files:
+        if (
+            not p.is_file()
+            or p.name in ("index.org", OUTCOME_FILENAME)
+            or p.resolve() in indexed_files
+        ):
             continue
         fail(f"{p.relative_to(ROOT)}: file is not listed in {rel_dir / 'index.org'}")
 
@@ -507,8 +537,8 @@ def main():
     current_version = current_guide_version()
     node_ids = validate_index()
     package_dirs = find_package_dirs()
-    archived = find_archived_packages()
-    cross_check(node_ids, package_dirs, archived)
+    settled = find_settled_outcomes()
+    cross_check(node_ids, package_dirs, settled)
 
     if INDEX.exists():
         validate_no_dangling_file_links(INDEX, INDEX.read_text())
@@ -522,14 +552,15 @@ def main():
         validate_supporting_files(dir_path, wt_file.read_text())
         validate_no_dangling_file_links(wt_file, wt_file.read_text())
 
-    for arc_id, arc_file in sorted(archived.items()):
-        # Archived files carry identical content requirements to an active
-        # walkthrough.org — only their location and filename differ. No
+    for settled_id, outcome_file in sorted(settled.items()):
+        # A settled outcome carries the same content requirements as an
+        # active walkthrough.org minus 'For AI Assistants'/'Search
+        # Prompts' (settled=True flips that check). No
         # validate_supporting_files call: archiving means there's nothing
         # left to check (SESH exports are deleted, not moved).
-        validate_walkthrough(arc_id, arc_file, current_version)
-        validate_archived_no_dangling_sesh_links(arc_file, arc_file.read_text())
-        validate_no_dangling_file_links(arc_file, arc_file.read_text())
+        validate_walkthrough(settled_id, outcome_file, current_version, settled=True)
+        validate_settled_no_dangling_sesh_links(outcome_file, outcome_file.read_text())
+        validate_no_dangling_file_links(outcome_file, outcome_file.read_text())
 
     validate_context(node_ids)
 

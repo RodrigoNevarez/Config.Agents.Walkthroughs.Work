@@ -1,4 +1,0 @@
-#+TITLE: CONTEXT Directory Index
-#+DESCRIPTION: SOURCE/STATUS/ID metadata for every file in this directory, kept out-of-band so the raw material files themselves stay untouched. See ../INSTRUCTIONS/08-context-guide.org.
-#+OPTIONS: toc:nil num:nil
-
