@@ -81,14 +81,28 @@ step — gets a permanent =:ID:= via a =:PROPERTIES:= drawer:
 
 * Issue-Tracker Mental Model
 
-Every Level 3 node in [[file:../index.org][index.org]] is an *issue*:
-title (heading), body (short description), state (=TODO=/=DONE= via
-Org's native keyword — open vs. closed), optional tags (Org's
-=:tag:= syntax, standing in for labels), and id (the =:ID:= UUID
-above, standing in for an issue number). Closing an issue means
-expanding it into a walkthrough package — see
-[[file:02-expansion-guide.org][02-expansion-guide.org]]. There's no
-"resolved but undocumented" state: closed implies the write-up exists.
+Every Level 3 node in [[file:../index.org][index.org]], or in
+=CONTEXT/closed.org= once it's archived (see
+[[file:01-index-guide.org][01-index-guide.org]]'s Closed Issues), is an
+*issue*:
+title (heading), body (short description), state (Org's native
+keywords, declared by =#+TODO: TODO ACTIVE | DONE= at the top of
+=index.org=), optional tags (Org's =:tag:= syntax, standing in for
+labels), and id (the =:ID:= UUID above, standing in for an issue number).
+
+The three states:
+- =TODO= — filed; no walkthrough exists yet.
+- =ACTIVE= — expanded into a walkthrough package (see
+  [[file:02-expansion-guide.org][02-expansion-guide.org]]), but its
+  checklist isn't fully worked yet.
+- =DONE= — closed: the walkthrough's checklist is fully worked (=[n/n]=),
+  every step backed by its own verified =*Result:*=.
+
+There's no "resolved but undocumented" state: =ACTIVE= and =DONE= both
+imply the write-up exists, and =DONE= additionally implies the work in it
+actually happened. An issue is never =DONE= just because its walkthrough
+was written. =SCRIPTS/validate-walkthroughs.py= checks that the index state
+and the walkthrough's checklist count agree.
 
 * Guide Version
 

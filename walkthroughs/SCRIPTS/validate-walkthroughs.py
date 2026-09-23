@@ -16,7 +16,8 @@ ROOT = WT_DIR.parent.parent
 INDEX = WT_DIR / "index.org"
 CONVENTIONS = WT_DIR / "INSTRUCTIONS" / "00-conventions.org"
 CONTEXT_DIR = WT_DIR / "CONTEXT"
-SKIP_DIRS = {"INSTRUCTIONS", "SCRIPTS", "CONTEXT", "inbox", "obsidian-graph"}
+CLOSED = CONTEXT_DIR / "closed.org"
+SKIP_DIRS = {"INSTRUCTIONS", "SCRIPTS", "CONTEXT", "inbox"}
 CONTEXT_VALID_SOURCES = {"you", "agent"}
 CONTEXT_VALID_STATUSES = {"proposed", "approved", "mined"}
 OUTCOME_FILENAME = "outcome.org"
@@ -108,21 +109,33 @@ def current_guide_version():
 
 
 def validate_index():
-    """Returns {uuid: {"state", "title", "has_link", "loc", "blocked_by"}}."""
+    """Returns {uuid: {"state", "title", "has_link", "loc", "blocked_by",
+    "blocked", "closed"}} across index.org and CONTEXT/closed.org — one
+    issue namespace split over two files (see 01-index-guide.org's Closed
+    Issues)."""
     node_ids = {}
     if not INDEX.exists():
         fail(f"{INDEX.relative_to(ROOT)}: file is missing")
         return node_ids
+    validate_index_file(INDEX, node_ids, closed=False)
+    if CLOSED.exists():
+        validate_index_file(CLOSED, node_ids, closed=True)
 
-    lines = INDEX.read_text().splitlines()
+    validate_dependency_graph(node_ids)
+    validate_blocked_flags(node_ids)
+    return node_ids
+
+
+def validate_index_file(path, node_ids, closed):
+    lines = path.read_text().splitlines()
     heading_idxs = [i for i, l in enumerate(lines) if re.match(r"^\*+\s", l)]
 
     for i, line in enumerate(lines):
-        m = re.match(r"^\*\*\*\s+(TODO|DONE)\s+(.*)$", line)
+        m = re.match(r"^\*\*\*\s+(TODO|ACTIVE|DONE)\s+(.*)$", line)
         if not m:
             continue
         state, title = m.group(1), m.group(2).strip()
-        loc = f"index.org:{i + 1}"
+        loc = f"{path.relative_to(WT_DIR)}:{i + 1}"
 
         if UUID_ANY_RE.search(title):
             fail(f"{loc}: heading text contains a raw UUID: '{title}'")
@@ -136,10 +149,12 @@ def validate_index():
 
         blocked_by_val = extract_drawer_field(lines, i + 1, next_idx, "BLOCKED_BY")
         blocked_by = blocked_by_val.split() if blocked_by_val else []
+        blocked_flag = extract_drawer_field(lines, i + 1, next_idx, "BLOCKED")
 
         has_link = any(
             f"file:{node_id}/walkthrough.org" in l
             or f"file:CONTEXT/{node_id}/{OUTCOME_FILENAME}" in l
+            or f"file:{node_id}/{OUTCOME_FILENAME}" in l
             for l in lines[i + 1 : next_idx]
         )
         node_ids[node_id] = {
@@ -148,14 +163,38 @@ def validate_index():
             "has_link": has_link,
             "loc": loc,
             "blocked_by": blocked_by,
+            "blocked": blocked_flag,
+            "closed": closed,
         }
-        if state == "DONE" and not has_link:
-            fail(f"{loc}: DONE node '{title}' has no walkthrough link")
+        if state in ("ACTIVE", "DONE") and not has_link:
+            fail(f"{loc}: {state} node '{title}' has no walkthrough link")
         if state == "TODO" and has_link:
-            warn(f"{loc}: TODO node '{title}' has a walkthrough link — should this be DONE?")
+            warn(f"{loc}: TODO node '{title}' has a walkthrough link — should this be ACTIVE?")
 
-    validate_dependency_graph(node_ids)
-    return node_ids
+
+def validate_blocked_flags(node_ids):
+    """See 01-index-guide.org's 'The Blocked Property': every node carries
+    :BLOCKED: true|false, and it must match what its :BLOCKED_BY: edges and
+    their TODO/ACTIVE/DONE states imply — the same rule SCRIPTS/sync-index.py
+    writes. A stale value is a failure, not a warning: a wrong "false"
+    sends someone to start work whose prerequisite isn't there yet."""
+    state_by_lower = {k.lower(): v["state"] for k, v in node_ids.items()}
+    for node_id, info in node_ids.items():
+        want = info["state"] != "DONE" and any(
+            state_by_lower.get(b.lower(), "TODO") != "DONE"
+            for b in info["blocked_by"]
+        )
+        have = info["blocked"]
+        if have is None:
+            fail(f"{info['loc']}: node '{info['title']}' has no :BLOCKED: "
+                 f"property — run SCRIPTS/sync-index.py")
+        elif have not in ("true", "false"):
+            fail(f"{info['loc']}: node '{info['title']}' has :BLOCKED: "
+                 f"'{have}' — must be true or false")
+        elif have != ("true" if want else "false"):
+            fail(f"{info['loc']}: node '{info['title']}' has :BLOCKED: {have}, "
+                 f"but its :BLOCKED_BY: dependencies imply "
+                 f"{'true' if want else 'false'} — run SCRIPTS/sync-index.py")
 
 
 def validate_dependency_graph(node_ids):
@@ -237,9 +276,9 @@ def cross_check(node_ids, package_dirs, settled):
         )
 
     for node_id, info in node_ids.items():
-        if info["state"] == "DONE" and node_id not in package_dirs and node_id not in settled:
+        if info["state"] in ("ACTIVE", "DONE") and node_id not in package_dirs and node_id not in settled:
             fail(
-                f"{info['loc']}: DONE node '{info['title']}' has no matching "
+                f"{info['loc']}: {info['state']} node '{info['title']}' has no matching "
                 f".agents/walkthroughs/{node_id}/ directory or "
                 f".agents/walkthroughs/CONTEXT/{node_id}/{OUTCOME_FILENAME} file"
             )
@@ -247,14 +286,58 @@ def cross_check(node_ids, package_dirs, settled):
         rel = path.relative_to(ROOT)
         if dir_id not in node_ids:
             fail(f"{rel}: no matching index.org node for this UUID")
-        elif node_ids[dir_id]["state"] != "DONE":
-            fail(f"{rel}: package exists but index.org node is not DONE")
+        elif node_ids[dir_id]["state"] == "TODO":
+            fail(f"{rel}: package exists but index.org node is still TODO — "
+                 f"expanding an issue makes it ACTIVE")
+    # 01-index-guide.org's Closed Issues: an archived issue lives in
+    # CONTEXT/closed.org, and closed.org holds nothing else.
+    for node_id, info in node_ids.items():
+        if info["closed"] and (info["state"] != "DONE" or node_id not in settled):
+            fail(f"{info['loc']}: '{info['title']}' is in closed.org but isn't an "
+                 f"archived DONE issue — closed.org holds only issues whose "
+                 f"CONTEXT/<uuid>/{OUTCOME_FILENAME} exists")
+        elif not info["closed"] and node_id in settled:
+            fail(f"{info['loc']}: '{info['title']}' is archived but still in "
+                 f"index.org — run SCRIPTS/sync-index.py to move it to "
+                 f"CONTEXT/closed.org")
     for settled_id, path in settled.items():
         rel = path.relative_to(ROOT)
         if settled_id not in node_ids:
             fail(f"{rel}: no matching index.org node for this UUID")
         elif node_ids[settled_id]["state"] != "DONE":
-            fail(f"{rel}: settled outcome exists but index.org node is not DONE")
+            fail(f"{rel}: settled outcome exists but index.org node is not DONE — "
+                 f"only a fully worked (DONE) issue can be archived")
+
+
+GUIDE_COUNT_RE = re.compile(r"^\*\s+(TODO|DONE)\s+.*\[(\d+)/(\d+)\]", re.M)
+
+
+def validate_state_matches_checklist(node_ids, package_dirs, settled):
+    """See 00-conventions.org's Issue-Tracker Mental Model: ACTIVE means the
+    walkthrough exists but its checklist isn't fully worked; DONE means it
+    is ([n/n]). The index state and the checklist count must agree, so an
+    issue can't read DONE (and unblock its dependents) before its steps
+    were actually worked, nor sit at ACTIVE after they all were."""
+    files = {**{k: v / "walkthrough.org" for k, v in package_dirs.items()},
+             **settled}
+    for node_id, path in files.items():
+        info = node_ids.get(node_id)
+        if not info or not path.exists():
+            continue  # reported elsewhere
+        m = GUIDE_COUNT_RE.search(path.read_text())
+        if not m:
+            continue  # validate_walkthrough reports the missing checklist
+        done, total = int(m.group(2)), int(m.group(3))
+        complete = total > 0 and done == total
+        rel = path.relative_to(ROOT)
+        if info["state"] == "DONE" and not complete:
+            fail(f"{info['loc']}: node '{info['title']}' is DONE but its "
+                 f"checklist is [{done}/{total}] ({rel}) — DONE means fully "
+                 f"worked; run SCRIPTS/sync-index.py")
+        elif info["state"] == "ACTIVE" and complete:
+            fail(f"{info['loc']}: node '{info['title']}' is ACTIVE but its "
+                 f"checklist is [{done}/{total}] ({rel}) — flip it to DONE "
+                 f"(SCRIPTS/sync-index.py does this)")
 
 
 REQUIRED_SECTIONS = ["Notes", "Search Prompts"]
@@ -457,9 +540,12 @@ def validate_context(node_ids):
         return
 
     for p in CONTEXT_DIR.iterdir():
+        if p == CLOSED:
+            continue  # the closed-issue index, see 01-index-guide.org
         if not p.is_dir():
             fail(f"{p.relative_to(ROOT)}: CONTEXT/ must contain only "
-                 f"per-issue subdirectories — no loose files at this level")
+                 f"per-issue subdirectories and closed.org — no other loose "
+                 f"files at this level")
             continue
         validate_context_subdir(p, node_ids)
 
@@ -545,9 +631,12 @@ def main():
     package_dirs = find_package_dirs()
     settled = find_settled_outcomes()
     cross_check(node_ids, package_dirs, settled)
+    validate_state_matches_checklist(node_ids, package_dirs, settled)
 
     if INDEX.exists():
         validate_no_dangling_file_links(INDEX, INDEX.read_text())
+    if CLOSED.exists():
+        validate_no_dangling_file_links(CLOSED, CLOSED.read_text())
 
     for wt_id, dir_path in sorted(package_dirs.items()):
         wt_file = dir_path / "walkthrough.org"

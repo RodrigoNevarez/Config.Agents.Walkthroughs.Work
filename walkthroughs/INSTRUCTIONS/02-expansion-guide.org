@@ -30,10 +30,31 @@ execute themselves.
    live alongside =walkthrough.org= in the same directory and get
    linked from it with relative =file:= links, instead of pasting
    everything inline as source blocks.
-5. *Close the issue*: in =index.org=, flip the node's state from
-   =TODO= to =DONE= and add a
+5. *Mark the issue =ACTIVE=*: in =index.org=, flip the node's state from
+   =TODO= to =ACTIVE= and add a
    =- *Walkthrough:* [[file:<uuid>/walkthrough.org][Topic Title]]=
-   line under it, pointing at the package.
+   line under it, pointing at the package. Expanding doesn't close the
+   issue, because nothing in the checklist has been worked yet (see
+   Finishing a Walkthrough, below). Regenerate =:BLOCKED:= with
+   =SCRIPTS/sync-index.py= and run the validator.
+
+* Finishing a Walkthrough
+
+When the last checklist step gets checked with its real =*Result:*=, the
+issue is finished, and it closes: its index node goes from =ACTIVE= to
+=DONE=. That's what closing an issue means: the work is done, not just
+written. The flip is bookkeeping, so it isn't done by hand. Run
+=SCRIPTS/sync-index.py= (see
+[[file:01-index-guide.org][01-index-guide.org]]'s The Blocked Property).
+It counts the real checkboxes, sets the Guide heading to
+=* DONE <title> [n/n]=, flips the node to =DONE=, and prints =CLOSED= plus a
+=NEWLY READY= line for every issue that closing unblocked. Then run the
+validator. The deliberate part, checking each box only with its verified
+=*Result:*=, stays with whoever reconciles the step. The validator fails an =ACTIVE= node whose
+checklist is complete, and a =DONE= node whose checklist isn't, so the two
+can't drift apart. A closed walkthrough is then eligible for archiving
+(see [[file:04-archive-guide.org][04-archive-guide.org]]), but it doesn't
+archive itself.
 
 ** UUID Placement
 Same rule as the index, and the same rule one level down for steps
@@ -97,16 +118,17 @@ not just what shape it takes.
    cold. (Grounded in Cognitive Task Analysis research: experts routinely
    fail to articulate roughly 70% of the decisions they actually make.)
 6. *Write Notes and Search Prompts.*
-7. *Close the issue in [[file:../index.org][index.org]]* and run the
-   validator, per the Expansion Workflow above.
+7. *Mark the issue =ACTIVE= in [[file:../index.org][index.org]]* and run
+   the validator, per the Expansion Workflow above. It becomes =DONE=
+   only once the checklist is worked (see Finishing a Walkthrough).
 
 Every step above still happens again, for real, when the walkthrough is
 actually worked — this describes how the *unworked* file gets written, not
 a substitute for doing the steps themselves later.
 
-* When to Close an Issue
+* When to Expand an Issue
 
-- *Close it* (expand into a walkthrough) for any troubleshooting,
+- *Expand it* into a walkthrough for any troubleshooting,
   configuration, or setup task that took real diagnosis — more than
   one obvious command, or anything where the fix isn't self-evident
   from the error message.

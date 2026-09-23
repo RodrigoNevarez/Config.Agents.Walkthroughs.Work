@@ -40,11 +40,12 @@ stripped before archiving (see the Archive Workflow, below).
 
 * When to Archive
 
-- The =index.org= node is already =DONE= (expanded, per
-  [[file:02-expansion-guide.org][02-expansion-guide.org]]'s Expansion
-  Workflow).
-- The walkthrough's own Guide checklist is fully checked (=[n/n]=). A
-  package still being actively worked through belongs in its full
+- The =index.org= node is =DONE=, which means the walkthrough's own
+  Guide checklist is fully checked (=[n/n]=); see
+  [[file:02-expansion-guide.org][02-expansion-guide.org]]'s Finishing a
+  Walkthrough. The validator keeps the two in agreement, so this is one
+  condition rather than two. An =ACTIVE= package still being worked
+  through belongs in its full
   directory form — supporting files may still be needed for ongoing
   reconciliation, and archiving mid-work would delete evidence that
   hasn't been folded into a =*Result:*= block yet.
@@ -114,6 +115,33 @@ stripped before archiving (see the Archive Workflow, below).
    graduated from the full expansion-and-work pipeline already, and its
    identity comes from its fixed filename plus the directory's UUID alone.
 
+   *CRITICAL RULE — rebase the file's own outbound links as part of the
+   move.* A =file:= link resolves relative to the directory of the file it
+   sits in, and this move changes that directory from
+   =.agents/walkthroughs/<uuid>/= to =.agents/walkthroughs/CONTEXT/<uuid>/=,
+   one level deeper. That makes every relative link the walkthrough itself
+   contains wrong. This is a different check from rule 4 (links to files
+   being deleted) and step 9 (other files' links *into* this one): both of
+   those are about someone else's links, and this is about the moved
+   file's own. List them before moving:
+   #+begin_src sh
+   grep -o "\[\[file:[^]]*\]" .agents/walkthroughs/<uuid>/walkthrough.org | sort -u
+   #+end_src
+   Rewrite each one for the new location:
+   | Link as written in the package                | Becomes in =outcome.org=                   |
+   |-------------------------------------------------+--------------------------------------------|
+   | =../<something>= (index, another package, ...)  | =../../<something>=                        |
+   | =../CONTEXT/<same-uuid>/<file>= (own research)  | =<file>= (now in the same directory)       |
+   | =../CONTEXT/<other-uuid>/<file>=                | =../<other-uuid>/<file>=                   |
+   Only the path changes; the link text and surrounding prose stay exactly
+   as written, the same rule step 9 applies to other outcomes. Links inside
+   =* For AI Assistants= and =* Search Prompts= need no rebasing, since
+   rule 5 already removed both sections. Found by archiving the GPU
+   identification walkthrough: its =../index.org=, its link to a sibling
+   package, and its research citations would all have dangled after the
+   =mv=. Only a manual check caught them, because this guide didn't list
+   the step.
+
 7. Delete the now-superseded supporting files and the now-empty package
    directory:
    #+begin_src sh
@@ -125,25 +153,45 @@ stripped before archiving (see the Archive Workflow, below).
 
 8. Update the =index.org= link for this node from
    =file:<uuid>/walkthrough.org= to =file:CONTEXT/<uuid>/outcome.org= —
-   the =DONE= state itself doesn't change, only the link target.
+   the =DONE= state itself doesn't change, only the link target. Then run
+   =SCRIPTS/sync-index.py=: it sees the new =outcome.org= and moves the
+   whole node into =CONTEXT/closed.org=, rebasing the link to
+   =file:<uuid>/outcome.org= (see
+   [[file:01-index-guide.org][01-index-guide.org]]'s Closed Issues).
 
-9. *CRITICAL RULE — check every other settled outcome for links pointing
-   at this package's pre-archive path.* Any earlier-settled walkthrough
-   that ever cited this one as an active package
-   (=file:../<uuid>/walkthrough.org=) now has a dangling link, since this
-   package just moved to =CONTEXT/<uuid>/outcome.org=. This is not the
-   "never rewritten" rule being violated — updating a =file:= link's
-   *path* to follow where something moved is exactly what step 8 above
-   already does for =index.org= itself; an already-settled file's own
-   prose, decisions, and =*Result:*= blocks still never change, only a
-   stale address. Grep every settled outcome, not just the package being
-   archived:
+9. *CRITICAL RULE — check every file that links to this package's
+   pre-archive path, not just settled outcomes.* Any file that cited this
+   package as an active one now has a dangling link, since the package
+   just moved to =CONTEXT/<uuid>/outcome.org=. That includes settled
+   outcomes, other *active* walkthroughs, and other issues' descriptions
+   in =index.org=, beyond the Walkthrough line step 8 already fixed. This
+   is not the "never rewritten" rule being violated: updating a =file:=
+   link's *path* to follow where something moved is what step 8 does for
+   =index.org= itself. An already-settled file's prose, decisions, and
+   =*Result:*= blocks still never change, only a stale address. Grep the
+   whole tree:
    #+begin_src sh
-   grep -rln "<uuid>/walkthrough.org" .agents/walkthroughs/CONTEXT/*/outcome.org
+   grep -rln "<uuid>/walkthrough.org" .agents/walkthroughs --include=*.org
    #+end_src
-   For each hit, update only the path
-   (=../<uuid>/walkthrough.org= → =../CONTEXT/<uuid>/outcome.org=), nothing
-   else.
+   The correct rewrite depends on where the *linking* file lives, because a
+   =file:= link resolves from that file's own directory:
+   | Linking file                               | Old link                          | New link                          |
+   |--------------------------------------------+-----------------------------------+-----------------------------------|
+   | =index.org= (any line)                     | =<uuid>/walkthrough.org=          | =CONTEXT/<uuid>/outcome.org=      |
+   | an active =<other>/walkthrough.org=        | =../<uuid>/walkthrough.org=       | =../CONTEXT/<uuid>/outcome.org=   |
+   | a settled =CONTEXT/<other>/outcome.org=    | =../../<uuid>/walkthrough.org=    | =../<uuid>/outcome.org=           |
+   | =CONTEXT/closed.org= (any line)            | =../<uuid>/walkthrough.org=       | =<uuid>/outcome.org=              |
+   One exception: raw CONTEXT research files are never edited (see
+   [[file:08-context-guide.org][08-context-guide.org]]'s byte-for-byte
+   rule), so a path they mention stays as written, as a historical
+   reference. When
+   archiving two packages that link to each other in the same pass, apply
+   step 6's outbound rebasing and this step together, so each link is
+   computed from its file's *final* location. Found by archiving the
+   machine-measurement walkthrough: the original =outcome.org=-only grep
+   would have missed four issue descriptions in =index.org= and one active
+   walkthrough, and the table's single example was wrong for the one
+   location the grep did search.
 
 10. Run the validator.
 
@@ -167,6 +215,12 @@ stripped before archiving (see the Archive Workflow, below).
   required on a settled outcome — =SCRIPTS/validate-walkthroughs.py=
   *fails* a =CONTEXT/<uuid>/outcome.org= that still has either one, the
   mechanical enforcement of CRITICAL RULE 5 above.
+- Every =[[file:...]]= link in a settled outcome must resolve relative to
+  =CONTEXT/<uuid>/=, the same dangling-link check an active
+  =walkthrough.org= gets. This is the mechanical backstop for step 6's
+  outbound-link CRITICAL RULE: an un-rebased =../index.org= fails here.
+  The rule still exists so the links get fixed *during* the move, not
+  discovered by the validator afterward.
 - There is no supporting-files check for a settled outcome (no
   =NN-<tool>-SESH.<ext>= linking rule to enforce) — by design, nothing but
   the single =outcome.org= file survives archiving into its CONTEXT

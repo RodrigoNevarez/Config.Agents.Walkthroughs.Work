@@ -30,8 +30,10 @@ groups issues by project or milestone; it isn't what determines state:
   is not limited to any fixed set.
 - *Level 2 (=**=)*: subcategories within a domain.
 - *Level 3 (=***=)*: an individual issue/topic. This is the node that
-  carries the =TODO=/=DONE= state and the =:ID:= property, and, once
-  closed, the link to its walkthrough package.
+  carries the =TODO=/=ACTIVE=/=DONE= state (see
+  [[file:00-conventions.org][00-conventions.org]]'s Issue-Tracker Mental
+  Model) and the =:ID:= property, and, once expanded, the link to its
+  walkthrough package.
 
 ** The UUID Placement Rule
 Every Level 3 node MUST include a =:PROPERTIES:= drawer containing a
@@ -45,8 +47,9 @@ place, shared with the walkthrough packages themselves.
 ** The Blocked By Property
 
 Alongside =:ID:=, a Level 3 node may also carry a =:BLOCKED_BY:= — zero
-or more UUIDs, space-separated, each naming another Level 3 node in this
-same =index.org= that must genuinely be true (built, decided, merged)
+or more UUIDs, space-separated, each naming another Level 3 node, in
+=index.org= or in =CONTEXT/closed.org= (see Closed Issues, below), that
+must genuinely be true (built, decided, merged)
 before this one can even start. Absence means exactly what it looks
 like: nothing currently known blocks it, and it can be worked today.
 This is a real dependency graph, not a single linear sequence — two
@@ -61,8 +64,9 @@ reusable template for the next similar one. A real dependency graph is a
 actual structural prerequisites a future project needs to satisfy, not
 just one arbitrary linearization of them.
 
-*CRITICAL RULE — a =DONE= node's =:BLOCKED_BY:= is permanent; a =TODO=
-node's is not.* Once a node closes, its =:BLOCKED_BY:= is a historical
+*CRITICAL RULE — a =DONE= node's =:BLOCKED_BY:= is permanent; a =TODO= or
+=ACTIVE= node's is not.* Once a node closes (=DONE=, fully worked), its
+=:BLOCKED_BY:= is a historical
 record of what actually had to be true first — never edited afterward,
 same reasoning as archived walkthrough packages never being rewritten
 (see [[file:04-archive-guide.org][04-archive-guide.org]]). An open
@@ -93,22 +97,99 @@ applies to archiving.
 
 A node with an empty or absent =:BLOCKED_BY:= is *ready* — nothing known
 stands between it and being worked today. A node with one or more
-unsatisfied =:BLOCKED_BY:= entries (any pointing at a still-=TODO= node)
+unsatisfied =:BLOCKED_BY:= entries (any pointing at a node that isn't
+=DONE= yet)
 isn't ready yet — that's the whole point of writing the edge down
 instead of discovering the gap mid-work.
 
-** Open vs. Closed Issues
-- *Open (=TODO=)*: heading + =:ID:= drawer + a =*End-State:*= line (see
+** The Blocked Property
+
+Every Level 3 node also carries =:BLOCKED: true= or =:BLOCKED: false= in
+its =:PROPERTIES:= drawer, directly after =:BLOCKED_BY:= (or after =:ID:=
+when there are no blockers). It answers the question the paragraph above
+defines, "can this be started today?", in one readable place, so nobody
+has to chase each blocker UUID and look up its state.
+
+- =TODO= or =ACTIVE= node: =true= if any UUID in its =:BLOCKED_BY:=
+  names a node that isn't =DONE= yet; =false= otherwise, including when
+  it has no blockers.
+- =DONE= node: always =false=, because a fully worked issue isn't waiting
+  on anything.
+
+An =ACTIVE= blocker still blocks. Its walkthrough exists, but until its
+checklist is fully worked, whatever depends on it can't rely on its
+result being real. That's the reason =DONE= means worked rather than
+written.
+
+*CRITICAL RULE — =:BLOCKED:= is derived, never hand-edited.* The source of
+truth is =:BLOCKED_BY:= plus each node's =TODO=/=ACTIVE=/=DONE= state;
+=:BLOCKED:= only mirrors them. Any edit that changes either one (filing
+an issue, rewiring an edge, pruning a node, expanding or closing an issue) changes
+some =:BLOCKED:= values, so regenerate them all with:
+#+begin_src sh
+python3 .agents/walkthroughs/SCRIPTS/sync-index.py
+#+end_src
+=sync-index.py= owns every *derived* value in one pass: each active
+walkthrough's =[x/n]= count and =TODO=/=DONE= heading (counted from its real
+checkboxes), each issue's =ACTIVE= ↔ =DONE= state (following that
+checklist), and every =:BLOCKED:=. It prints one line per change
+(=CLOSED=, =NEWLY READY=, =NOW BLOCKED=, ...) and nothing at all when
+everything is current, so running it after any edit costs almost
+nothing to read. =--list= also prints every open issue as ready or
+blocked. =--check= writes nothing and exits non-zero if anything is out of
+date. =SCRIPTS/validate-walkthroughs.py= fails on the same
+inconsistencies, so a forgotten sync fails validation instead of silently
+misleading anyone. It never expands an issue (=TODO= → =ACTIVE=), archives,
+checks a box, or edits an archived =outcome.org=; those are deliberate
+acts, not bookkeeping. A stale =false= is the dangerous direction: it sends someone to
+start work whose prerequisite isn't there yet.
+
+** Issue States
+- *Filed (=TODO=)*: heading + =:ID:= drawer + a =*End-State:*= line (see
   Backward-Chained Filing, below) + a short description of the problem,
   with no walkthrough link yet. This is a filed issue — something worth
   documenting the next time it's actually solved.
-- *Closed (=DONE=)*: the same node, plus a =- *Walkthrough:*
+- *Expanded (=ACTIVE=)*: the same node, plus a =- *Walkthrough:*
   [[file:<uuid>/walkthrough.org][...]]= line pointing at its package
-  directory.
+  directory. The walkthrough exists; its checklist isn't fully worked.
+- *Closed (=DONE=)*: the walkthrough's checklist is fully worked
+  (=[n/n]=). The Walkthrough link stays. Once the walkthrough is archived
+  (see [[file:04-archive-guide.org][04-archive-guide.org]]), the whole node
+  leaves =index.org= for =CONTEXT/closed.org= (see Closed Issues, below).
 
-Don't force every issue open today to be closed immediately. Filing a
+Don't force every issue open today to be expanded or closed immediately. Filing a
 topic costs nothing; writing the full walkthrough is worth doing only
 when the problem is actually being worked through.
+
+** Closed Issues
+
+=index.org= is the working set: open issues (=TODO=, =ACTIVE=) plus any
+=DONE= issue whose walkthrough hasn't been archived yet. An archived
+issue's node moves, unchanged apart from rebased =file:= links, to
+=.agents/walkthroughs/CONTEXT/closed.org=. That's the same move archiving
+already makes for the walkthrough itself: a settled issue's research,
+outcome, and index entry all end up under =CONTEXT/=. =closed.org= uses the
+same =* Domain= / =** Subcategory= headings, created there as needed.
+A subcategory or domain that the move leaves empty in =index.org= is
+removed.
+
+Nothing about the issue is lost, which is why this beats pruning:
+- =:BLOCKED_BY:= edges from open issues still resolve, because
+  =SCRIPTS/validate-walkthroughs.py= and =SCRIPTS/sync-index.py= read both
+  files as one issue namespace.
+- The issue's =CONTEXT/<uuid>/= folder still matches a node, as the
+  validator requires.
+- The permanent =:BLOCKED_BY:= record and the Walkthrough link to
+  =outcome.org= stay intact.
+
+*CRITICAL RULE — the move is bookkeeping, done by =SCRIPTS/sync-index.py=,
+never by hand.* After archiving, run it. It moves every =DONE= node whose
+=CONTEXT/<uuid>/outcome.org= exists, rebases its links for the
+=CONTEXT/= directory, and prints =MOVED TO CLOSED=. The validator enforces
+the split both ways: an archived issue still in =index.org= fails, and so
+does anything in =closed.org= that isn't an archived =DONE= issue. A
+correction to a closed issue is a new issue in =index.org=, never an edit
+that drags the closed one back (see 04-archive-guide.org's Purpose).
 
 * Handling a Pivot
 
@@ -131,8 +212,9 @@ issue comes next:
    happened.
 3. *File whatever new issues the pivot introduces*, working backward
    from the new end-state — see Backward-Chained Filing, below.
-4. *Run the validator* once the dust settles, same as any other edit to
-   =index.org=.
+4. *Regenerate =:BLOCKED:= and run the validator* once the dust
+   settles, same as any other edit to =index.org= (see The Blocked
+   Property, above).
 
 Skipping this checkpoint is how an index quietly goes stale — the
 dependency graph keeps existing, but stops describing what's actually in
@@ -176,6 +258,7 @@ instead of before starting.
 #+TITLE: Walkthroughs Index
 #+DESCRIPTION: Central index of problem-solving walkthroughs — teaching artifacts, not fix logs.
 #+OPTIONS: toc:nil num:nil
+#+TODO: TODO ACTIVE | DONE
 
 * <Domain>
   <One line describing what this domain covers.>
@@ -185,6 +268,7 @@ instead of before starting.
     :PROPERTIES:
     :ID:          xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     :BLOCKED_BY:  zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz
+    :BLOCKED:     true
     :END:
     *End-State:* <the precise condition that means this is done>
     One or two sentences on what the problem is and why it matters.
@@ -192,6 +276,7 @@ instead of before starting.
 *** TODO <Problem Title, Ready Now>
     :PROPERTIES:
     :ID:          zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz
+    :BLOCKED:     false
     :END:
     *End-State:* <the precise condition that means this is done>
     One or two sentences on what the problem is and why it matters.
@@ -199,6 +284,7 @@ instead of before starting.
 *** DONE <Another Problem Title>
     :PROPERTIES:
     :ID:       yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
+    :BLOCKED:  false
     :END:
     *End-State:* <the precise condition that means this is done>
     One or two sentences on what the problem is and why it matters.
@@ -234,7 +320,10 @@ instead of before starting.
 5. *Run the validator* after editing =index.org= —
    =SCRIPTS/validate-walkthroughs.py= checks every node has a valid,
    unique =:ID:=, that every =:BLOCKED_BY:= UUID resolves to a real node
-   with no cycles, that DONE nodes have a matching package directory,
+   with no cycles, that every =:BLOCKED:= value is present and current
+   (run =SCRIPTS/sync-index.py= first; see The Blocked Property),
+   that ACTIVE and DONE nodes have a matching package or outcome, that
+   the state agrees with the checklist count (=DONE= only at =[n/n]=),
    and that TODO nodes don't. It catches exactly the mistakes the
    CRITICAL RULEs above are trying to prevent, mechanically instead of
    by memory.
